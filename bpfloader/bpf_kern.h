@@ -16,16 +16,7 @@
 
 /*
  * This h file together with bpf_kern.c is used for compiling the eBPF kernel
- * program. To generate the bpf_kern.o file manually, use the clang prebuilt in
- * this android tree to compile the files with --target=bpf options. For
- * example, in system/netd/ directory, execute the following command:
- * $: ANDROID_BASE_DIRECTORY/prebuilts/clang/host/linux-x86/clang-4691093/bin/clang  \
- *    -I ANDROID_BASE_DIRECTORY/bionic/libc/kernel/uapi/ \
- *    -I ANDROID_BASE_DIRECTORY/system/netd/bpfloader/ \
- *    -I ANDROID_BASE_DIRECTORY/bionic/libc/kernel/android/uapi/ \
- *    -I ANDROID_BASE_DIRECTORY/bionic/libc/include \
- *    -I ANDROID_BASE_DIRECTORY/system/netd/libbpf/include  \
- *    --target=bpf -O2 -c bpfloader/bpf_kern.c -o bpfloader/bpf_kern.o
+ * program.
  */
 
 #include <linux/bpf.h>
@@ -37,7 +28,7 @@
 #include <linux/ipv6.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "bpf/bpf_shared.h"
+#include "netdbpf/bpf_shared.h"
 
 #define ELF_SEC(NAME) __attribute__((section(NAME), used))
 

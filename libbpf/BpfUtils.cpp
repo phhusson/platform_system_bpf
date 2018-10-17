@@ -381,7 +381,7 @@ int parsePrograms(Slice fileContents, BpfProgInfo* programs, size_t size,
 
 int parseProgramsFromFile(const char* path, BpfProgInfo* programs, size_t size,
                           const std::vector<BpfMapInfo>& mapPatterns) {
-    unique_fd fd(open(path, O_RDONLY));
+    unique_fd fd(open(path, O_RDONLY | O_CLOEXEC));
     int ret;
     if (fd < 0) {
         ret = -errno;
