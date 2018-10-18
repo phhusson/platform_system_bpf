@@ -47,7 +47,7 @@ template <class Key, class Value>
 class BpfMap {
   public:
     BpfMap<Key, Value>() : mMapFd(-1){};
-    BpfMap<Key, Value>(int fd) : mMapFd(fd){};
+    explicit BpfMap<Key, Value>(int fd) : mMapFd(fd){};
     BpfMap<Key, Value>(bpf_map_type map_type, uint32_t max_entries, uint32_t map_flags) {
         int map_fd = createMap(map_type, sizeof(Key), sizeof(Value), max_entries, map_flags);
         if (map_fd < 0) {
@@ -57,7 +57,7 @@ class BpfMap {
         }
     }
 
-    netdutils::Status pinToPath(const std::string path) {
+    netdutils::Status pinToPath(const std::string& path) {
         int ret = bpfFdPin(mMapFd, path.c_str());
         if (ret) {
             return netdutils::statusFromErrno(errno,
