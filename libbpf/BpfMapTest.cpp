@@ -33,16 +33,9 @@
 #include <android-base/stringprintf.h>
 #include <android-base/strings.h>
 
-#include <netdutils/MockSyscalls.h>
 #include "bpf/BpfMap.h"
-#include "bpf/BpfNetworkStats.h"
 #include "bpf/BpfUtils.h"
 
-using ::testing::_;
-using ::testing::ByMove;
-using ::testing::Invoke;
-using ::testing::Return;
-using ::testing::StrictMock;
 using ::testing::Test;
 
 namespace android {

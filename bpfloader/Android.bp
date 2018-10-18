@@ -20,7 +20,7 @@
 cc_binary {
     name: "bpfloader",
 
-    defaults: ["netd_defaults"],
+    defaults: ["bpf_defaults"],
     cflags: [
         "-Wall",
         "-Werror",
@@ -35,6 +35,7 @@ cc_binary {
         "libbpf",
         "libbase",
         "liblog",
+        "libnetdbpf",
         "libnetdutils",
     ],
     srcs: [
@@ -54,5 +55,5 @@ bpf {
         "-Wall",
         "-Werror",
     ],
-    include_dirs: ["system/netd/libbpf/include"],
+    include_dirs: ["system/netd/libnetdbpf/include"],
 }
