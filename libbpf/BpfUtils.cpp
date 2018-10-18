@@ -212,6 +212,18 @@ uint64_t getSocketCookie(int sockFd) {
 }
 
 bool hasBpfSupport() {
+    // ARC P - Temporary declare no BPF support on devices running 4.14 and shipping initially
+    // with P until security concerns with BPF inside the ARC container are resolved.
+    constexpr int kInvalidCmd = -1;
+    bpf(kInvalidCmd, Slice());
+    if (errno == ENOSYS) {
+        // This kernel was not built with support for the bpf(2) syscall. In that case the SDK
+        // level check below is ignored and no BPF support is declared. This forces
+        // FirewallController to fallback on the "legacy" implementation using iptables
+        // xt_qtaguid / xt_owner2 modules.
+        return false;
+    }
+    // ARC P - End.
     struct utsname buf;
     int kernel_version_major;
     int kernel_version_minor;
