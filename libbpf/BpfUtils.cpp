@@ -16,6 +16,8 @@
 
 #define LOG_TAG "BpfUtils"
 
+#include "bpf/BpfUtils.h"
+
 #include <elf.h>
 #include <inttypes.h>
 #include <linux/bpf.h>
@@ -31,20 +33,16 @@
 #include <string>
 
 #include <android-base/properties.h>
-#include <android-base/stringprintf.h>
 #include <android-base/unique_fd.h>
+#include <log/log.h>
 #include <netdutils/MemBlock.h>
 #include <netdutils/Slice.h>
-#include <netdutils/StatusOr.h>
-#include "bpf/BpfUtils.h"
 
 using android::base::GetUintProperty;
-using android::base::StringPrintf;
 using android::base::unique_fd;
 using android::netdutils::MemBlock;
 using android::netdutils::Slice;
 using android::netdutils::statusFromErrno;
-using android::netdutils::StatusOr;
 
 constexpr size_t LOG_BUF_SIZE = 65536;
 
