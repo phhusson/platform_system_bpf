@@ -13,5 +13,7 @@ cc_defaults {
         "android-*",
         "cert-*",
         "clang-analyzer-security*",
+        // Disabling due to many unavoidable warnings from POSIX API usage.
+        "-google-runtime-int",
     ],
 }
