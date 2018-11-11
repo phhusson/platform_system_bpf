@@ -32,7 +32,7 @@ cc_binary {
     clang: true,
     shared_libs: [
         "libcutils",
-        "libbpf",
+        "libbpf_android",
         "libbase",
         "liblog",
         "libnetdbpf",
