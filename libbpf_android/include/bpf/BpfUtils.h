@@ -116,8 +116,8 @@ struct BpfMapInfo {
         : BpfMapInfo(dummyFd, android::bpf::mapRetrieve(mapPath, 0)) {}
 
     BpfMapInfo(uint64_t dummyFd, int realFd, const char* mapPath = "") : fd(realFd), path(mapPath) {
-        search = BPF_MAP_SEARCH_PATTERN((uint8_t*) &dummyFd);
-        replace = BPF_MAP_REPLACE_PATTERN((uint8_t*) &realFd);
+        search = BPF_MAP_SEARCH_PATTERN((uint8_t*)&dummyFd);
+        replace = BPF_MAP_REPLACE_PATTERN((uint8_t*)&realFd);
     }
 };
 
@@ -133,8 +133,8 @@ constexpr const uint64_t NONEXISTENT_COOKIE = 0;
 
 constexpr const int MINIMUM_API_REQUIRED = 28;
 
-int createMap(bpf_map_type map_type, uint32_t key_size, uint32_t value_size,
-              uint32_t max_entries, uint32_t map_flags);
+int createMap(bpf_map_type map_type, uint32_t key_size, uint32_t value_size, uint32_t max_entries,
+              uint32_t map_flags);
 int writeToMapEntry(const base::unique_fd& map_fd, void* key, void* value, uint64_t flags);
 int findMapEntry(const base::unique_fd& map_fd, void* key, void* value);
 int deleteMapEntry(const base::unique_fd& map_fd, void* key);
