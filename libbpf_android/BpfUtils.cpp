@@ -238,8 +238,8 @@ bool hasBpfSupport() {
     }
     char dummy;
     ret = sscanf(buf.release, "%d.%d%c", &kernel_version_major, &kernel_version_minor, &dummy);
-    if (ret >= 2 && ((kernel_version_major > 4) ||
-                         (kernel_version_major == 4 && kernel_version_minor >= 9))) {
+    if (ret >= 2 &&
+        ((kernel_version_major > 4) || (kernel_version_major == 4 && kernel_version_minor >= 9))) {
         // Check if the device is shipped originally with android P.
         return api_level >= MINIMUM_API_REQUIRED;
     }
@@ -283,7 +283,7 @@ int loadAndPinProgram(BpfProgInfo* prog, Slice progBlock) {
 
 int extractAndLoadProg(BpfProgInfo* prog, Elf64_Shdr* sectionPtr, Slice fileContents,
                        const std::vector<BpfMapInfo>& mapPatterns) {
-    uint64_t progSize = (uint64_t) sectionPtr->sh_size;
+    uint64_t progSize = (uint64_t)sectionPtr->sh_size;
     Slice progSection = take(drop(fileContents, sectionPtr->sh_offset), progSize);
     if (progSection.size() < progSize) {
         ALOGE("programSection out of bound");
@@ -326,7 +326,7 @@ int parsePrograms(Slice fileContents, BpfProgInfo* programs, size_t size,
         return -EINVAL;
     }
 
-    Elf64_Ehdr* elf = (Elf64_Ehdr*) elfHeader.base();
+    Elf64_Ehdr* elf = (Elf64_Ehdr*)elfHeader.base();
     // Find section names string table. This is the section whose index is e_shstrndx.
     if (elf->e_shstrndx == SHN_UNDEF) {
         ALOGE("cannot locate namesSection\n");
@@ -340,13 +340,13 @@ int parsePrograms(Slice fileContents, BpfProgInfo* programs, size_t size,
     }
 
     Slice namesSection =
-            take(drop(sections, elf->e_shstrndx * sizeof(Elf64_Shdr)), sizeof(Elf64_Shdr));
+        take(drop(sections, elf->e_shstrndx * sizeof(Elf64_Shdr)), sizeof(Elf64_Shdr));
     if (namesSection.size() != sizeof(Elf64_Shdr)) {
         ALOGE("namesSection corrupted");
         return -EMSGSIZE;
     }
-    size_t strTabOffset = ((Elf64_Shdr*) namesSection.base())->sh_offset;
-    size_t strTabSize = ((Elf64_Shdr*) namesSection.base())->sh_size;
+    size_t strTabOffset = ((Elf64_Shdr*)namesSection.base())->sh_offset;
+    size_t strTabSize = ((Elf64_Shdr*)namesSection.base())->sh_size;
 
     Slice strTab = take(drop(fileContents, strTabOffset), strTabSize);
     if (strTab.size() < strTabSize) {
@@ -362,7 +362,7 @@ int parsePrograms(Slice fileContents, BpfProgInfo* programs, size_t size,
                   i, section.size(), sizeof(Elf64_Shdr), sections.size());
             return -EBADF;
         }
-        Elf64_Shdr* sectionPtr = (Elf64_Shdr*) section.base();
+        Elf64_Shdr* sectionPtr = (Elf64_Shdr*)section.base();
         Slice nameSlice = drop(strTab, sectionPtr->sh_name);
         if (nameSlice.size() == 0) {
             ALOGE("nameSlice out of bound, i: %d, strTabSize: %zu, sh_name: %u", i, strTabSize,
@@ -371,7 +371,7 @@ int parsePrograms(Slice fileContents, BpfProgInfo* programs, size_t size,
         }
         for (size_t i = 0; i < size; i++) {
             BpfProgInfo* prog = programs + i;
-            if (!strcmp((char*) nameSlice.base(), prog->name)) {
+            if (!strcmp((char*)nameSlice.base(), prog->name)) {
                 int ret = extractAndLoadProg(prog, sectionPtr, fileContents, mapPatterns);
                 if (ret) return ret;
             }
@@ -407,8 +407,7 @@ int parseProgramsFromFile(const char* path, BpfProgInfo* programs, size_t size,
     }
 
     off_t fileLen = stat.st_size;
-    char* baseAddr =
-            (char*) mmap(NULL, fileLen, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd.get(), 0);
+    char* baseAddr = (char*)mmap(NULL, fileLen, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd.get(), 0);
     if (baseAddr == MAP_FAILED) {
         ALOGE("Failed to map the program (%s) into memory: %s", path, strerror(errno));
         ret = -errno;
