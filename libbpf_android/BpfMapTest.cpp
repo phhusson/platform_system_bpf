@@ -262,18 +262,18 @@ TEST_F(BpfMapTest, mapIsEmpty) {
     expectMapEmpty(testMap);
     int entriesSeen = 0;
     EXPECT_OK(testMap.iterate(
-            [&entriesSeen](const unsigned int&,
-                           const BpfMap<unsigned int, unsigned int>&) -> netdutils::Status {
-                entriesSeen++;
-                return netdutils::status::ok;
-            }));
+        [&entriesSeen](const unsigned int&,
+                       const BpfMap<unsigned int, unsigned int>&) -> netdutils::Status {
+            entriesSeen++;
+            return netdutils::status::ok;
+        }));
     EXPECT_EQ(0, entriesSeen);
     EXPECT_OK(testMap.iterateWithValue(
-            [&entriesSeen](const unsigned int&, const unsigned int&,
-                           const BpfMap<unsigned int, unsigned int>&) -> netdutils::Status {
-                entriesSeen++;
-                return netdutils::status::ok;
-            }));
+        [&entriesSeen](const unsigned int&, const unsigned int&,
+                       const BpfMap<unsigned int, unsigned int>&) -> netdutils::Status {
+            entriesSeen++;
+            return netdutils::status::ok;
+        }));
     EXPECT_EQ(0, entriesSeen);
 }
 
