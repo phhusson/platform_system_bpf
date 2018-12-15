@@ -52,14 +52,14 @@ using android::netdutils::Slice;
 #define BPF_PROG_PATH "/system/etc/bpf"
 #define BPF_PROG_SRC BPF_PROG_PATH "/bpf_kern.o"
 
-#define CLEANANDEXIT(ret, mapPatterns)                 \
-    do {                                               \
-        for (int i = 0; i < mapPatterns.size(); i++) { \
-            if (mapPatterns[i].fd > -1) {              \
-                close(mapPatterns[i].fd);              \
-            }                                          \
-        }                                              \
-        return ret;                                    \
+#define CLEANANDEXIT(ret, mapPatterns)                           \
+    do {                                                         \
+        for (unsigned long i = 0; i < mapPatterns.size(); i++) { \
+            if (mapPatterns[i].fd > -1) {                        \
+                close(mapPatterns[i].fd);                        \
+            }                                                    \
+        }                                                        \
+        return ret;                                              \
     } while (0)
 
 using android::bpf::BpfMapInfo;
@@ -76,7 +76,7 @@ int main() {
         BpfMapInfo(CONFIGURATION_MAP, CONFIGURATION_MAP_PATH),
         BpfMapInfo(UID_OWNER_MAP, UID_OWNER_MAP_PATH),
     };
-    for (int i = 0; i < mapPatterns.size(); i++) {
+    for (unsigned long i = 0; i < mapPatterns.size(); i++) {
         if (mapPatterns[i].fd < 0) {
             ALOGE("Rerieve Map from %s failed: %d", mapPatterns[i].path.c_str(), mapPatterns[i].fd);
             CLEANANDEXIT(-1, mapPatterns);
