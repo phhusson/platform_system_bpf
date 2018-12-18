@@ -37,6 +37,7 @@ cc_binary {
         "liblog",
         "libnetdbpf",
         "libnetdutils",
+        "libbpf",
     ],
     srcs: [
         "BpfLoader.cpp",
@@ -44,6 +45,8 @@ cc_binary {
 
     required: [
         "bpf_kern.o",
+// Uncomment once security related patches ready
+//      "time_in_state.o",
     ],
 
 }
