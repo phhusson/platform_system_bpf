@@ -34,6 +34,7 @@ cc_library {
         android: {
             srcs: [
                 "BpfUtils.cpp",
+                "Loader.cpp",
             ],
             sanitize: {
                 misc_undefined: ["integer"],
@@ -46,6 +47,7 @@ cc_library {
         "libutils",
         "liblog",
         "libnetdutils",
+        "libbpf",
     ],
     header_libs: [
         "libbpf_android_headers"
