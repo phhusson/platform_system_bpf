@@ -19,6 +19,7 @@
 #endif
 
 #include <arpa/inet.h>
+#include <dirent.h>
 #include <elf.h>
 #include <error.h>
 #include <fcntl.h>
@@ -38,34 +39,58 @@
 #include <sys/types.h>
 
 #include <android-base/stringprintf.h>
+#include <android-base/strings.h>
 #include <android-base/unique_fd.h>
+#include <libbpf_android.h>
 #include <log/log.h>
-
 #include <netdutils/Misc.h>
 #include <netdutils/Slice.h>
 #include "bpf/BpfUtils.h"
 #include "netdbpf/bpf_shared.h"
 
+using android::base::EndsWith;
 using android::base::unique_fd;
 using android::netdutils::Slice;
+using std::string;
 
-#define BPF_PROG_PATH "/system/etc/bpf"
-#define BPF_PROG_SRC BPF_PROG_PATH "/bpf_kern.o"
+#define BPF_PROG_PATH "/system/etc/bpf/"
+#define BPF_PROG_SRC BPF_PROG_PATH "bpf_kern.o"
 
-#define CLEANANDEXIT(ret, mapPatterns)                           \
-    do {                                                         \
-        for (unsigned long i = 0; i < mapPatterns.size(); i++) { \
-            if (mapPatterns[i].fd > -1) {                        \
-                close(mapPatterns[i].fd);                        \
-            }                                                    \
-        }                                                        \
-        return ret;                                              \
+#define CLEANANDEXIT(ret, mapPatterns)                    \
+    do {                                                  \
+        for (size_t i = 0; i < mapPatterns.size(); i++) { \
+            if (mapPatterns[i].fd > -1) {                 \
+                close(mapPatterns[i].fd);                 \
+            }                                             \
+        }                                                 \
+        return ret;                                       \
     } while (0)
 
 using android::bpf::BpfMapInfo;
 using android::bpf::BpfProgInfo;
 
+void loadAllElfObjects(void) {
+    DIR* dir;
+    struct dirent* ent;
+
+    if ((dir = opendir(BPF_PROG_PATH)) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            string s = ent->d_name;
+            if (!EndsWith(s, ".o")) continue;
+
+            string progPath = BPF_PROG_PATH + s;
+
+            int ret = android::bpf::loadProg(progPath.c_str());
+            ALOGI("Attempted load object: %s, ret: %s", progPath.c_str(), std::strerror(-ret));
+        }
+        closedir(dir);
+    }
+}
+
 int main() {
+    // Load all ELF objects, create programs and maps, and pin them
+    loadAllElfObjects();
+
     const std::vector<BpfMapInfo> mapPatterns = {
         BpfMapInfo(COOKIE_TAG_MAP, COOKIE_TAG_MAP_PATH),
         BpfMapInfo(UID_COUNTERSET_MAP, UID_COUNTERSET_MAP_PATH),
@@ -76,7 +101,7 @@ int main() {
         BpfMapInfo(CONFIGURATION_MAP, CONFIGURATION_MAP_PATH),
         BpfMapInfo(UID_OWNER_MAP, UID_OWNER_MAP_PATH),
     };
-    for (unsigned long i = 0; i < mapPatterns.size(); i++) {
+    for (size_t i = 0; i < mapPatterns.size(); i++) {
         if (mapPatterns[i].fd < 0) {
             ALOGE("Rerieve Map from %s failed: %d", mapPatterns[i].path.c_str(), mapPatterns[i].fd);
             CLEANANDEXIT(-1, mapPatterns);
