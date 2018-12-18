@@ -50,7 +50,6 @@
 
 using android::base::EndsWith;
 using android::base::unique_fd;
-using android::netdutils::Slice;
 using std::string;
 
 #define BPF_PROG_PATH "/system/etc/bpf/"
