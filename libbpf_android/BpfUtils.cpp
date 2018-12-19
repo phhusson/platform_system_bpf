@@ -42,7 +42,6 @@ using android::base::GetUintProperty;
 using android::base::unique_fd;
 using android::netdutils::MemBlock;
 using android::netdutils::Slice;
-using android::netdutils::statusFromErrno;
 
 constexpr size_t LOG_BUF_SIZE = 65536;
 
