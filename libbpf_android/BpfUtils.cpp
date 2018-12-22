@@ -167,12 +167,16 @@ int bpfFdPin(const base::unique_fd& map_fd, const char* pathname) {
     return bpf(BPF_OBJ_PIN, Slice(&attr, sizeof(attr)));
 }
 
-int mapRetrieve(const char* pathname, uint32_t flag) {
+int bpfFdGet(const char* pathname, uint32_t flag) {
     bpf_attr attr;
     memset(&attr, 0, sizeof(attr));
     attr.pathname = ptr_to_u64((void*)pathname);
     attr.file_flags = flag;
     return bpf(BPF_OBJ_GET, Slice(&attr, sizeof(attr)));
+}
+
+int mapRetrieve(const char* pathname, uint32_t flag) {
+    return bpfFdGet(pathname, flag);
 }
 
 int attachProgram(bpf_attach_type type, uint32_t prog_fd, uint32_t cg_fd) {
