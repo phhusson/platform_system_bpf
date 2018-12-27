@@ -63,14 +63,15 @@ typedef struct {
  * is the name of the program, and tracepoint is the type.
  */
 sectionType sectionNameTypes[] = {
-    { "kprobe", BPF_PROG_TYPE_KPROBE },
-    { "tracepoint", BPF_PROG_TYPE_TRACEPOINT },
-    { "skfilter", BPF_PROG_TYPE_SOCKET_FILTER },
-    { "cgroupskb", BPF_PROG_TYPE_CGROUP_SKB },
-    { "schedcls", BPF_PROG_TYPE_SCHED_CLS },
+    {"kprobe", BPF_PROG_TYPE_KPROBE},
+    {"tracepoint", BPF_PROG_TYPE_TRACEPOINT},
+    {"skfilter", BPF_PROG_TYPE_SOCKET_FILTER},
+    {"cgroupskb", BPF_PROG_TYPE_CGROUP_SKB},
+    {"schedcls", BPF_PROG_TYPE_SCHED_CLS},
+    {"cgroupsock", BPF_PROG_TYPE_CGROUP_SOCK},
 
     /* End of table */
-    { "END", BPF_PROG_TYPE_UNSPEC },
+    {"END", BPF_PROG_TYPE_UNSPEC},
 };
 
 typedef struct {
