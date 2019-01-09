@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2019 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,38 +15,14 @@
 //
 
 //
-// bpfLoad binary
+// bpf kernel programs
 //
-cc_binary {
-    name: "bpfloader",
-
-    defaults: ["bpf_defaults"],
+bpf {
+    name: "netd.o",
+    srcs: ["netd.c"],
     cflags: [
         "-Wall",
         "-Werror",
-        "-Wthread-safety",
     ],
-    sanitize: {
-        integer_overflow: true,
-    },
-    clang: true,
-    shared_libs: [
-        "libcutils",
-        "libbpf_android",
-        "libbase",
-        "liblog",
-        "libnetdbpf",
-        "libnetdutils",
-        "libbpf",
-    ],
-    srcs: [
-        "BpfLoader.cpp",
-    ],
-
-    required: [
-        "netd.o",
-// Uncomment once security related patches ready
-//      "time_in_state.o",
-    ],
-
+    include_dirs: ["system/netd/libnetdbpf/include"],
 }
