@@ -143,6 +143,7 @@ int getFirstMapKey(const base::unique_fd& map_fd, void* firstKey);
 int bpfProgLoad(bpf_prog_type prog_type, netdutils::Slice bpf_insns, const char* license,
                 uint32_t kern_version, netdutils::Slice bpf_log);
 int bpfFdPin(const base::unique_fd& map_fd, const char* pathname);
+int bpfFdGet(const char* pathname, uint32_t flags);
 int attachProgram(bpf_attach_type type, uint32_t prog_fd, uint32_t cg_fd);
 int detachProgram(bpf_attach_type type, uint32_t cg_fd);
 uint64_t getSocketCookie(int sockFd);

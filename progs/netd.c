@@ -14,47 +14,48 @@
  * limitations under the License.
  */
 
+#include "netd.h"
 #include <linux/bpf.h>
-#include "bpf_kern.h"
 
-
-ELF_SEC(BPF_CGROUP_INGRESS_PROG_NAME)
+SEC("cgroupskb/ingress/stats")
 int bpf_cgroup_ingress(struct __sk_buff* skb) {
     return bpf_traffic_account(skb, BPF_INGRESS);
 }
 
-ELF_SEC(BPF_CGROUP_EGRESS_PROG_NAME)
+SEC("cgroupskb/egress/stats")
 int bpf_cgroup_egress(struct __sk_buff* skb) {
     return bpf_traffic_account(skb, BPF_EGRESS);
 }
 
-ELF_SEC(XT_BPF_EGRESS_PROG_NAME)
+SEC("skfilter/egress/xtbpf")
 int xt_bpf_egress_prog(struct __sk_buff* skb) {
     uint32_t key = skb->ifindex;
-    bpf_update_stats(skb, IFACE_STATS_MAP, BPF_EGRESS, &key);
+    bpf_update_stats(skb, &iface_stats_map, BPF_EGRESS, &key);
     return BPF_MATCH;
 }
 
-ELF_SEC(XT_BPF_INGRESS_PROG_NAME)
+SEC("skfilter/ingress/xtbpf")
 int xt_bpf_ingress_prog(struct __sk_buff* skb) {
     uint32_t key = skb->ifindex;
-    bpf_update_stats(skb, IFACE_STATS_MAP, BPF_INGRESS, &key);
+    bpf_update_stats(skb, &iface_stats_map, BPF_INGRESS, &key);
     return BPF_MATCH;
 }
 
-ELF_SEC(XT_BPF_WHITELIST_PROG_NAME)
+SEC("skfilter/whitelist/xtbpf")
 int xt_bpf_whitelist_prog(struct __sk_buff* skb) {
     uint32_t sock_uid = get_socket_uid(skb);
     if (is_system_uid(sock_uid)) return BPF_MATCH;
-    uint8_t* whitelistMatch = find_map_entry(UID_OWNER_MAP, &sock_uid);
+    uint8_t* whitelistMatch = find_map_entry(&uid_owner_map, &sock_uid);
     if (whitelistMatch) return *whitelistMatch & HAPPY_BOX_MATCH;
     return BPF_NOMATCH;
 }
 
-ELF_SEC(XT_BPF_BLACKLIST_PROG_NAME)
+SEC("skfilter/blacklist/xtbpf")
 int xt_bpf_blacklist_prog(struct __sk_buff* skb) {
     uint32_t sock_uid = get_socket_uid(skb);
-    uint8_t* blacklistMatch = find_map_entry(UID_OWNER_MAP, &sock_uid);
+    uint8_t* blacklistMatch = find_map_entry(&uid_owner_map, &sock_uid);
     if (blacklistMatch) return *blacklistMatch & PENALTY_BOX_MATCH;
     return BPF_NOMATCH;
 }
+
+char _license[] SEC("license") = "Apache 2.0";
