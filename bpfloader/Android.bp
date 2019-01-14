@@ -43,6 +43,8 @@ cc_binary {
         "BpfLoader.cpp",
     ],
 
+    init_rc: ["bpfloader.rc"],
+
     required: [
         "netd.o",
 // Uncomment once security related patches ready
