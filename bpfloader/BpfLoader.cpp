@@ -38,6 +38,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <android-base/properties.h>
 #include <android-base/stringprintf.h>
 #include <android-base/strings.h>
 #include <android-base/unique_fd.h>
@@ -86,6 +87,19 @@ void loadAllElfObjects(void) {
 }
 
 int main() {
+    std::string value = android::base::GetProperty("bpf.progs_loaded", "");
+    if (value == "1") {
+        ALOGI("Property bpf.progs_loaded is set, progs already loaded.\n");
+        return 0;
+    }
+
     // Load all ELF objects, create programs and maps, and pin them
     loadAllElfObjects();
+
+    if (android::base::SetProperty("bpf.progs_loaded", "1") == false) {
+        ALOGE("Failed to set bpf.progs_loaded property\n");
+        return 1;
+    }
+
+    return 0;
 }
