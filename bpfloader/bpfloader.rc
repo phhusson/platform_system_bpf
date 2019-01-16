@@ -1,0 +1,4 @@
+service bpfloader /system/bin/bpfloader
+    class main
+    capabilities SYS_ADMIN
+    oneshot
