@@ -47,8 +47,7 @@ cc_binary {
 
     required: [
         "netd.o",
-// Uncomment once security related patches ready
-//      "time_in_state.o",
+        "time_in_state.o",
     ],
 
 }
