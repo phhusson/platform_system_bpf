@@ -110,21 +110,21 @@ struct bpf_map_def SEC("maps") app_uid_stats_map = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(struct stats_value),
-    .max_entries = UID_STATS_MAP_SIZE,
+    .max_entries = APP_STATS_MAP_SIZE,
 };
 
-struct bpf_map_def SEC("maps") uid_stats_map = {
+struct bpf_map_def SEC("maps") stats_map_A = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(struct stats_key),
     .value_size = sizeof(struct stats_value),
-    .max_entries = UID_STATS_MAP_SIZE,
+    .max_entries = STATS_MAP_SIZE,
 };
 
-struct bpf_map_def SEC("maps") tag_stats_map = {
+struct bpf_map_def SEC("maps") stats_map_B = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(struct stats_key),
     .value_size = sizeof(struct stats_value),
-    .max_entries = TAG_STATS_MAP_SIZE,
+    .max_entries = STATS_MAP_SIZE,
 };
 
 struct bpf_map_def SEC("maps") iface_stats_map = {
@@ -218,8 +218,8 @@ static inline bool skip_owner_match(struct __sk_buff* skb) {
     return false;
 }
 
-static __always_inline BpfConfig getConfig() {
-    uint32_t mapSettingKey = CONFIGURATION_KEY;
+static __always_inline BpfConfig getConfig(uint32_t configKey) {
+    uint32_t mapSettingKey = configKey;
     BpfConfig* config = find_map_entry(&configuration_map, &mapSettingKey);
     if (!config) {
         // Couldn't read configuration entry. Assume everything is disabled.
@@ -233,7 +233,7 @@ static inline int bpf_owner_match(struct __sk_buff* skb, uint32_t uid) {
 
     if ((uid <= MAX_SYSTEM_UID) && (uid >= MIN_SYSTEM_UID)) return BPF_PASS;
 
-    BpfConfig enabledRules = getConfig();
+    BpfConfig enabledRules = getConfig(UID_RULES_CONFIGURATION_KEY);
     if (!enabledRules) {
         return BPF_PASS;
     }
@@ -250,6 +250,15 @@ static inline int bpf_owner_match(struct __sk_buff* skb, uint32_t uid) {
         return BPF_DROP;
     }
     return BPF_PASS;
+}
+
+static __always_inline inline void update_stats_with_config(struct __sk_buff* skb, int direction,
+                                                            void* key, uint8_t selectedMap) {
+    if (selectedMap == SELECT_MAP_A) {
+        bpf_update_stats(skb, &stats_map_A, direction, key);
+    } else if (selectedMap == SELECT_MAP_B) {
+        bpf_update_stats(skb, &stats_map_B, direction, key);
+    }
 }
 
 static __always_inline inline int bpf_traffic_account(struct __sk_buff* skb, int direction) {
@@ -277,12 +286,18 @@ static __always_inline inline int bpf_traffic_account(struct __sk_buff* skb, int
     uint8_t* counterSet = find_map_entry(&uid_counterset_map, &uid);
     if (counterSet) key.counterSet = (uint32_t)*counterSet;
 
+    uint32_t mapSettingKey = CURRENT_STATS_MAP_CONFIGURATION_KEY;
+    uint8_t* selectedMap = find_map_entry(&configuration_map, &mapSettingKey);
+    if (!selectedMap) {
+        return match;
+    }
+
     if (tag) {
-        bpf_update_stats(skb, &tag_stats_map, direction, &key);
+        update_stats_with_config(skb, direction, &key, *selectedMap);
     }
 
     key.tag = 0;
-    bpf_update_stats(skb, &uid_stats_map, direction, &key);
+    update_stats_with_config(skb, direction, &key, *selectedMap);
     bpf_update_stats(skb, &app_uid_stats_map, direction, &uid);
     return match;
 }
