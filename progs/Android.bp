@@ -24,5 +24,8 @@ bpf {
         "-Wall",
         "-Werror",
     ],
-    include_dirs: ["system/netd/libnetdbpf/include"],
+    include_dirs: [
+        "system/netd/libnetdbpf/include",
+        "system/netd/libnetdutils/include",
+    ],
 }
