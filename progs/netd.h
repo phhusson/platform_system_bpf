@@ -64,6 +64,7 @@ static uint64_t (*get_socket_cookie)(struct __sk_buff* skb) = (void*)BPF_FUNC_ge
 static uint32_t (*get_socket_uid)(struct __sk_buff* skb) = (void*)BPF_FUNC_get_socket_uid;
 static int (*bpf_skb_load_bytes)(struct __sk_buff* skb, int off, void* to,
                                  int len) = (void*)BPF_FUNC_skb_load_bytes;
+static uint64_t (*bpf_get_current_uid_gid)(void) = (void*)BPF_FUNC_get_current_uid_gid;
 
 // This is defined for cgroup bpf filter only.
 #define BPF_PASS 1
