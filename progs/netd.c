@@ -58,4 +58,26 @@ int xt_bpf_blacklist_prog(struct __sk_buff* skb) {
     return BPF_NOMATCH;
 }
 
+struct bpf_map_def SEC("maps") uid_permission_map = {
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = sizeof(uint32_t),
+    .value_size = sizeof(uint8_t),
+    .max_entries = UID_OWNER_MAP_SIZE,
+};
+
+SEC("cgroupsock/inet/creat")
+int inet_socket_create(struct bpf_sock* sk) {
+    uint64_t gid_uid = bpf_get_current_uid_gid();
+    /*
+     * A given app is guaranteed to have the same app ID in all the profiles in
+     * which it is installed, and install permission is granted to app for all
+     * user at install time so we only check the appId part of a request uid at
+     * run time. See UserHandle#isSameApp for detail.
+     */
+    uint32_t appId = (gid_uid & 0xffffffff) % PER_USER_RANGE;
+    uint8_t* internetPermission = find_map_entry(&uid_permission_map, &appId);
+    if (internetPermission) return *internetPermission & ALLOW_SOCK_CREATE;
+    return NO_PERMISSION;
+}
+
 char _license[] SEC("license") = "Apache 2.0";
