@@ -16,20 +16,17 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include <android-base/strings.h>
 
-using android::base::Split;
-using std::string;
-using std::vector;
-
-static string pathToFilename(string path, bool noext = false) {
-    vector<string> spath = android::base::Split(path, "/");
-    string ret = spath.back();
+static std::string pathToFilename(const std::string& path, bool noext = false) {
+    std::vector<std::string> spath = android::base::Split(path, "/");
+    std::string ret = spath.back();
 
     if (noext) {
-        size_t lastindex = ret.find_last_of(".");
+        size_t lastindex = ret.find_last_of('.');
         return ret.substr(0, lastindex);
     }
     return ret;
@@ -43,21 +40,21 @@ static int getMachineKvers(void) {
     if (uname(&un)) return -1;
     unameOut = un.release;
 
-    string s = unameOut;
-    string token;
+    std::string s = unameOut;
+    std::string token;
     size_t pos = 0;
     int cur_num = 0;
 
-    while ((pos = s.find(".")) != string::npos && cur_num < 3) {
+    while ((pos = s.find('.')) != std::string::npos && cur_num < 3) {
         token = s.substr(0, pos);
         s.erase(0, pos + 1);
 
-        if ((pos = token.find("-")) != string::npos) token = token.substr(0, pos);
+        if ((pos = token.find('-')) != std::string::npos) token = token.substr(0, pos);
 
         nums[cur_num++] = stoi(token);
     }
 
-    if ((pos = s.find("-")) != string::npos)
+    if ((pos = s.find('-')) != std::string::npos)
         token = s.substr(0, pos);
     else
         token = s;
@@ -72,6 +69,6 @@ static int getMachineKvers(void) {
         return (65536 * nums[0] + 256 * nums[1] + nums[2]);
 }
 
-static void deslash(string& s) {
+static void deslash(std::string& s) {
     std::replace(s.begin(), s.end(), '/', '_');
 }
