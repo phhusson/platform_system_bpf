@@ -34,6 +34,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <android-base/strings.h>
 
@@ -45,6 +46,7 @@
 using android::base::StartsWith;
 using std::ifstream;
 using std::ios;
+using std::string;
 using std::vector;
 
 namespace android {
@@ -498,7 +500,7 @@ static void applyMapRelo(ifstream& elfFile, vector<int> mapFds, vector<codeSecti
     }
 }
 
-static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, string license) {
+static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const string& license) {
     int ret, fd, kvers;
 
     if ((kvers = getMachineKvers()) < 0) return -1;

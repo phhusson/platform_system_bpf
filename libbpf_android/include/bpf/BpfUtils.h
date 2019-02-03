@@ -125,8 +125,6 @@ struct BpfMapInfo {
 #define DEFAULT_OVERFLOWUID 65534
 #endif
 
-constexpr const char* CGROUP_ROOT_PATH = "/dev/cg2_bpf";
-
 constexpr const int OVERFLOW_COUNTERSET = 2;
 
 constexpr const uint64_t NONEXISTENT_COOKIE = 0;
