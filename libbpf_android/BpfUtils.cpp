@@ -38,6 +38,7 @@
 #include <log/log.h>
 #include <netdutils/MemBlock.h>
 #include <netdutils/Slice.h>
+#include <processgroup/processgroup.h>
 
 using android::base::GetUintProperty;
 using android::base::unique_fd;
@@ -272,7 +273,13 @@ int loadAndPinProgram(BpfProgInfo* prog, Slice progBlock) {
         return ret;
     }
     if (prog->attachType == BPF_CGROUP_INET_EGRESS || prog->attachType == BPF_CGROUP_INET_INGRESS) {
-        unique_fd cg_fd(open(CGROUP_ROOT_PATH, O_DIRECTORY | O_RDONLY | O_CLOEXEC));
+        std::string cg2_path;
+        if (!CgroupGetControllerPath(CGROUPV2_CONTROLLER_NAME, &cg2_path)) {
+            int ret = -errno;
+            ALOGE("Failed to find cgroup v2 root");
+            return ret;
+        }
+        unique_fd cg_fd(open(cg2_path.c_str(), O_DIRECTORY | O_RDONLY | O_CLOEXEC));
         if (cg_fd < 0) {
             int ret = -errno;
             ALOGE("Failed to open the cgroup directory");
