@@ -84,3 +84,29 @@ cc_test {
         "libutils",
     ],
 }
+
+cc_test {
+    name: "libbpf_load_test",
+    srcs: [
+        "BpfLoadTest.cpp",
+    ],
+    defaults: ["bpf_defaults"],
+    cflags: [
+        "-Wall",
+        "-Werror",
+        "-Wno-error=unused-variable",
+    ],
+    static_libs: ["libgmock"],
+    shared_libs: [
+        "libbpf_android",
+        "libbpf",
+        "libbase",
+        "liblog",
+        "libnetdutils",
+        "libutils",
+    ],
+
+    required: [
+        "bpf_load_tp_prog.o",
+    ],
+}
