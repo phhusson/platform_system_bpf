@@ -43,17 +43,17 @@ int xt_bpf_ingress_prog(struct __sk_buff* skb) {
 
 SEC("skfilter/whitelist/xtbpf")
 int xt_bpf_whitelist_prog(struct __sk_buff* skb) {
-    uint32_t sock_uid = get_socket_uid(skb);
+    uint32_t sock_uid = bpf_get_socket_uid(skb);
     if (is_system_uid(sock_uid)) return BPF_MATCH;
-    uint8_t* whitelistMatch = find_map_entry(&uid_owner_map, &sock_uid);
+    uint8_t* whitelistMatch = bpf_map_lookup_elem(&uid_owner_map, &sock_uid);
     if (whitelistMatch) return *whitelistMatch & HAPPY_BOX_MATCH;
     return BPF_NOMATCH;
 }
 
 SEC("skfilter/blacklist/xtbpf")
 int xt_bpf_blacklist_prog(struct __sk_buff* skb) {
-    uint32_t sock_uid = get_socket_uid(skb);
-    uint8_t* blacklistMatch = find_map_entry(&uid_owner_map, &sock_uid);
+    uint32_t sock_uid = bpf_get_socket_uid(skb);
+    uint8_t* blacklistMatch = bpf_map_lookup_elem(&uid_owner_map, &sock_uid);
     if (blacklistMatch) return *blacklistMatch & PENALTY_BOX_MATCH;
     return BPF_NOMATCH;
 }
@@ -75,7 +75,7 @@ int inet_socket_create(struct bpf_sock* sk) {
      * run time. See UserHandle#isSameApp for detail.
      */
     uint32_t appId = (gid_uid & 0xffffffff) % PER_USER_RANGE;
-    uint8_t* internetPermission = find_map_entry(&uid_permission_map, &appId);
+    uint8_t* internetPermission = bpf_map_lookup_elem(&uid_permission_map, &appId);
     if (internetPermission) return *internetPermission & ALLOW_SOCK_CREATE;
     return NO_PERMISSION;
 }
