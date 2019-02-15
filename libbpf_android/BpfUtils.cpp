@@ -237,7 +237,17 @@ int synchronizeKernelRCU() {
     return 0;
 }
 
-bool hasBpfSupport() {
+std::string BpfLevelToString(BpfLevel bpfLevel) {
+    switch (bpfLevel) {
+        case BpfLevel::NONE:      return "NONE_SUPPORT";
+        case BpfLevel::BASIC:     return "BPF_LEVEL_BASIC";
+        case BpfLevel::EXTENDED:  return "BPF_LEVEL_EXTENDED";
+        // No default statement. We want to see errors of the form:
+        // "enumeration value 'BPF_LEVEL_xxx' not handled in switch [-Werror,-Wswitch]".
+    }
+}
+
+BpfLevel getBpfSupportLevel() {
     struct utsname buf;
     int kernel_version_major;
     int kernel_version_minor;
@@ -248,18 +258,22 @@ bool hasBpfSupport() {
         api_level = GetUintProperty<uint64_t>("ro.build.version.sdk", 0);
     }
 
+    // Check if the device is shipped originally with android P.
+    if (api_level < MINIMUM_API_REQUIRED) return BpfLevel::NONE;
+
     int ret = uname(&buf);
     if (ret) {
-        return false;
+        return BpfLevel::NONE;
     }
     char dummy;
     ret = sscanf(buf.release, "%d.%d%c", &kernel_version_major, &kernel_version_minor, &dummy);
-    if (ret >= 2 &&
-        ((kernel_version_major > 4) || (kernel_version_major == 4 && kernel_version_minor >= 9))) {
-        // Check if the device is shipped originally with android P.
-        return api_level >= MINIMUM_API_REQUIRED;
-    }
-    return false;
+    // Check the device kernel version
+    if (ret < 2) return BpfLevel::NONE;
+    if (kernel_version_major > 4 || (kernel_version_major == 4 && kernel_version_minor >= 14))
+        return BpfLevel::EXTENDED;
+    if (kernel_version_major == 4 && kernel_version_minor >= 9) return BpfLevel::BASIC;
+
+    return BpfLevel::NONE;
 }
 
 int loadAndPinProgram(BpfProgInfo* prog, Slice progBlock) {
