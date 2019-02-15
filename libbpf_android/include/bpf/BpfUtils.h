@@ -121,6 +121,18 @@ struct BpfMapInfo {
     }
 };
 
+enum class BpfLevel {
+    // Devices shipped before P or kernel version is lower than 4.9 do not
+    // have eBPF enabled.
+    NONE,
+    // Devices shipped in P with android 4.9 kernel only have the basic eBPF
+    // functionalities such as xt_bpf and cgroup skb filter.
+    BASIC,
+    // For devices that have 4.14 kernel. It supports advanced features like
+    // map_in_map and cgroup socket filter.
+    EXTENDED,
+};
+
 #ifndef DEFAULT_OVERFLOWUID
 #define DEFAULT_OVERFLOWUID 65534
 #endif
@@ -145,14 +157,23 @@ int bpfFdGet(const char* pathname, uint32_t flags);
 int attachProgram(bpf_attach_type type, uint32_t prog_fd, uint32_t cg_fd);
 int detachProgram(bpf_attach_type type, uint32_t cg_fd);
 uint64_t getSocketCookie(int sockFd);
-bool hasBpfSupport();
+std::string BpfLevelToString(BpfLevel BpfLevel);
+BpfLevel getBpfSupportLevel();
 int parseProgramsFromFile(const char* path, BpfProgInfo* programs, size_t size,
                           const std::vector<BpfMapInfo>& mapPatterns);
 int synchronizeKernelRCU();
 
-#define SKIP_IF_BPF_NOT_SUPPORTED     \
-    do {                              \
-        if (!hasBpfSupport()) return; \
+#define SKIP_IF_BPF_NOT_SUPPORTED                                                    \
+    do {                                                                             \
+        if (android::bpf::getBpfSupportLevel() == android::bpf::BpfLevel::NONE) {    \
+            GTEST_LOG_(INFO) << "This test is skipped since bpf is not available\n"; \
+            return;                                                                  \
+        }                                                                            \
+    } while (0)
+
+#define SKIP_IF_BPF_SUPPORTED                                                           \
+    do {                                                                                \
+        if (android::bpf::getBpfSupportLevel() != android::bpf::BpfLevel::NONE) return; \
     } while (0)
 
 constexpr int BPF_CONTINUE = 0;
