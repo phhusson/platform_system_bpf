@@ -19,6 +19,7 @@
  * program.
  */
 
+#include <bpf_helpers.h>
 #include <linux/bpf.h>
 #include <linux/if.h>
 #include <linux/if_ether.h>
@@ -29,8 +30,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "netdbpf/bpf_shared.h"
-
-#define SEC(NAME) __attribute__((section(NAME), used))
 
 struct uid_tag {
     uint32_t uid;
@@ -55,17 +54,6 @@ struct IfaceValue {
     char name[IFNAMSIZ];
 };
 
-/* helper functions called from eBPF programs written in C */
-static void* (*find_map_entry)(void* map, void* key) = (void*)BPF_FUNC_map_lookup_elem;
-static int (*write_to_map_entry)(void* map, void* key, void* value,
-                                 uint64_t flags) = (void*)BPF_FUNC_map_update_elem;
-static int (*delete_map_entry)(void* map, void* key) = (void*)BPF_FUNC_map_delete_elem;
-static uint64_t (*get_socket_cookie)(struct __sk_buff* skb) = (void*)BPF_FUNC_get_socket_cookie;
-static uint32_t (*get_socket_uid)(struct __sk_buff* skb) = (void*)BPF_FUNC_get_socket_uid;
-static int (*bpf_skb_load_bytes)(struct __sk_buff* skb, int off, void* to,
-                                 int len) = (void*)BPF_FUNC_skb_load_bytes;
-static uint64_t (*bpf_get_current_uid_gid)(void) = (void*)BPF_FUNC_get_current_uid_gid;
-
 // This is defined for cgroup bpf filter only.
 #define BPF_PASS 1
 #define BPF_DROP 0
@@ -82,16 +70,6 @@ static uint64_t (*bpf_get_current_uid_gid)(void) = (void*)BPF_FUNC_get_current_u
 #define IPPROTO_IHL_OFF 0
 #define TCP_FLAG_OFF 13
 #define RST_OFFSET 2
-
-/* loader usage */
-struct bpf_map_def {
-    unsigned int type;
-    unsigned int key_size;
-    unsigned int value_size;
-    unsigned int max_entries;
-    unsigned int map_flags;
-    unsigned int pad[2];
-};
 
 struct bpf_map_def SEC("maps") cookie_tag_map = {
     .type = BPF_MAP_TYPE_HASH,
@@ -163,11 +141,11 @@ static __always_inline int is_system_uid(uint32_t uid) {
 static __always_inline inline void bpf_update_stats(struct __sk_buff* skb, struct bpf_map_def* map,
                                                     int direction, void* key) {
     struct stats_value* value;
-    value = find_map_entry(map, key);
+    value = bpf_map_lookup_elem(map, key);
     if (!value) {
         struct stats_value newValue = {};
-        write_to_map_entry(map, key, &newValue, BPF_NOEXIST);
-        value = find_map_entry(map, key);
+        bpf_map_update_elem(map, key, &newValue, BPF_NOEXIST);
+        value = bpf_map_lookup_elem(map, key);
     }
     if (value) {
         if (direction == BPF_EGRESS) {
@@ -221,7 +199,7 @@ static inline bool skip_owner_match(struct __sk_buff* skb) {
 
 static __always_inline BpfConfig getConfig(uint32_t configKey) {
     uint32_t mapSettingKey = configKey;
-    BpfConfig* config = find_map_entry(&configuration_map, &mapSettingKey);
+    BpfConfig* config = bpf_map_lookup_elem(&configuration_map, &mapSettingKey);
     if (!config) {
         // Couldn't read configuration entry. Assume everything is disabled.
         return DEFAULT_CONFIG;
@@ -239,7 +217,7 @@ static inline int bpf_owner_match(struct __sk_buff* skb, uint32_t uid) {
         return BPF_PASS;
     }
 
-    uint8_t* uidEntry = find_map_entry(&uid_owner_map, &uid);
+    uint8_t* uidEntry = bpf_map_lookup_elem(&uid_owner_map, &uid);
     uint8_t uidRules = uidEntry ? *uidEntry : 0;
     if ((enabledRules & DOZABLE_MATCH) && !(uidRules & DOZABLE_MATCH)) {
         return BPF_DROP;
@@ -263,7 +241,7 @@ static __always_inline inline void update_stats_with_config(struct __sk_buff* sk
 }
 
 static __always_inline inline int bpf_traffic_account(struct __sk_buff* skb, int direction) {
-    uint32_t sock_uid = get_socket_uid(skb);
+    uint32_t sock_uid = bpf_get_socket_uid(skb);
     int match = bpf_owner_match(skb, sock_uid);
     if ((direction == BPF_EGRESS) && (match == BPF_DROP)) {
         // If an outbound packet is going to be dropped, we do not count that
@@ -271,8 +249,8 @@ static __always_inline inline int bpf_traffic_account(struct __sk_buff* skb, int
         return match;
     }
 
-    uint64_t cookie = get_socket_cookie(skb);
-    struct uid_tag* utag = find_map_entry(&cookie_tag_map, &cookie);
+    uint64_t cookie = bpf_get_socket_cookie(skb);
+    struct uid_tag* utag = bpf_map_lookup_elem(&cookie_tag_map, &cookie);
     uint32_t uid, tag;
     if (utag) {
         uid = utag->uid;
@@ -284,11 +262,11 @@ static __always_inline inline int bpf_traffic_account(struct __sk_buff* skb, int
 
     struct stats_key key = {.uid = uid, .tag = tag, .counterSet = 0, .ifaceIndex = skb->ifindex};
 
-    uint8_t* counterSet = find_map_entry(&uid_counterset_map, &uid);
+    uint8_t* counterSet = bpf_map_lookup_elem(&uid_counterset_map, &uid);
     if (counterSet) key.counterSet = (uint32_t)*counterSet;
 
     uint32_t mapSettingKey = CURRENT_STATS_MAP_CONFIGURATION_KEY;
-    uint8_t* selectedMap = find_map_entry(&configuration_map, &mapSettingKey);
+    uint8_t* selectedMap = bpf_map_lookup_elem(&configuration_map, &mapSettingKey);
     if (!selectedMap) {
         return match;
     }
