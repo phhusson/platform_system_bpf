@@ -47,7 +47,6 @@
 #include <netdutils/Misc.h>
 #include <netdutils/Slice.h>
 #include "bpf/BpfUtils.h"
-#include "netdbpf/bpf_shared.h"
 
 using android::base::EndsWith;
 using android::base::unique_fd;
