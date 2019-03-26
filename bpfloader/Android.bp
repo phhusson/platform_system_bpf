@@ -35,7 +35,6 @@ cc_binary {
         "libbpf_android",
         "libbase",
         "liblog",
-        "libnetdbpf",
         "libnetdutils",
         "libbpf",
     ],
