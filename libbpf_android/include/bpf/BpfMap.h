@@ -57,16 +57,6 @@ class BpfMap {
         }
     }
 
-    netdutils::Status pinToPath(const std::string& path) {
-        int ret = bpfFdPin(mMapFd, path.c_str());
-        if (ret) {
-            return netdutils::statusFromErrno(errno,
-                                              base::StringPrintf("pin to %s failed", path.c_str()));
-        }
-        mPinnedPath = path;
-        return netdutils::status::ok;
-    }
-
     netdutils::StatusOr<Key> getFirstKey() const {
         Key firstKey;
         if (getFirstMapKey(mMapFd, &firstKey)) {
@@ -139,22 +129,14 @@ class BpfMap {
 
     const base::unique_fd& getMap() const { return mMapFd; };
 
-    const std::string getPinnedPath() const { return mPinnedPath; };
-
     // Move constructor
     void operator=(BpfMap<Key, Value>&& other) noexcept {
         mMapFd = std::move(other.mMapFd);
-        if (!other.mPinnedPath.empty()) {
-            mPinnedPath = other.mPinnedPath;
-        } else {
-            mPinnedPath.clear();
-        }
         other.reset();
     }
 
     void reset(int fd = -1) {
         mMapFd.reset(fd);
-        mPinnedPath.clear();
     }
 
     bool isValid() const { return mMapFd != -1; }
@@ -183,7 +165,6 @@ class BpfMap {
 
   private:
     base::unique_fd mMapFd;
-    std::string mPinnedPath;
 };
 
 template <class Key, class Value>
@@ -201,7 +182,6 @@ netdutils::Status BpfMap<Key, Value>::getOrCreate(const uint32_t maxEntries, con
                 errno,
                 base::StringPrintf("pinned map not accessible or does not exist: (%s)\n", path));
         }
-        mPinnedPath = path;
     } else if (ret == -1 && errno == ENOENT) {
         mMapFd = base::unique_fd(
             createMap(mapType, sizeof(Key), sizeof(Value), maxEntries, BPF_F_NO_PREALLOC));
@@ -210,12 +190,6 @@ netdutils::Status BpfMap<Key, Value>::getOrCreate(const uint32_t maxEntries, con
             return netdutils::statusFromErrno(errno,
                                               base::StringPrintf("map create failed!: %s", path));
         }
-        netdutils::Status pinStatus = pinToPath(path);
-        if (!isOk(pinStatus)) {
-            reset();
-            return pinStatus;
-        }
-        mPinnedPath = path;
     } else {
         return netdutils::statusFromErrno(
             errno, base::StringPrintf("pinned map not accessible: %s", path));
