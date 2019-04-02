@@ -174,7 +174,7 @@ TEST_F(BpfMapTest, SetUpMap) {
     EXPECT_EQ(0, access(PINNED_MAP_PATH, R_OK));
     checkMapValid(testMap1);
     BpfMap<uint32_t, uint32_t> testMap2;
-    EXPECT_OK(testMap2.getOrCreate(TEST_MAP_SIZE, PINNED_MAP_PATH, BPF_MAP_TYPE_HASH));
+    EXPECT_OK(testMap2.init(PINNED_MAP_PATH));
     checkMapValid(testMap2);
     uint32_t key = TEST_KEY1;
     uint32_t value = TEST_VALUE1;
