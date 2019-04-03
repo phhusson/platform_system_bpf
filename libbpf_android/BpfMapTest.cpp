@@ -76,7 +76,6 @@ class BpfMapTest : public testing::Test {
     void checkMapInvalid(BpfMap<uint32_t, uint32_t>& map) {
         EXPECT_FALSE(map.isValid());
         EXPECT_EQ(-1, map.getMap().get());
-        EXPECT_TRUE(map.getPinnedPath().empty());
     }
 
     void checkMapValid(BpfMap<uint32_t, uint32_t>& map) {
@@ -118,11 +117,9 @@ TEST_F(BpfMapTest, constructor) {
 
     BpfMap<uint32_t, uint32_t> testMap2(mMapFd);
     checkMapValid(testMap2);
-    EXPECT_TRUE(testMap2.getPinnedPath().empty());
 
     BpfMap<uint32_t, uint32_t> testMap3(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     checkMapValid(testMap3);
-    EXPECT_TRUE(testMap3.getPinnedPath().empty());
 }
 
 TEST_F(BpfMapTest, basicHelpers) {
@@ -168,34 +165,17 @@ TEST_F(BpfMapTest, moveConstructor) {
     writeToMapAndCheck(testMap2, key, value);
 }
 
-TEST_F(BpfMapTest, pinnedToPath) {
-    SKIP_IF_BPF_NOT_SUPPORTED;
-
-    BpfMap<uint32_t, uint32_t> testMap1(mMapFd);
-    EXPECT_OK(testMap1.pinToPath(PINNED_MAP_PATH));
-    EXPECT_EQ(0, access(PINNED_MAP_PATH, R_OK));
-    EXPECT_EQ(0, testMap1.getPinnedPath().compare(PINNED_MAP_PATH));
-    BpfMap<uint32_t, uint32_t> testMap2(mapRetrieve(PINNED_MAP_PATH, 0));
-    checkMapValid(testMap2);
-    uint32_t key = TEST_KEY1;
-    uint32_t value = TEST_VALUE1;
-    writeToMapAndCheck(testMap1, key, value);
-    StatusOr<uint32_t> value_read = testMap2.readValue(key);
-    checkValueAndStatus(value, value_read);
-}
-
 TEST_F(BpfMapTest, SetUpMap) {
     SKIP_IF_BPF_NOT_SUPPORTED;
 
-    BpfMap<uint32_t, uint32_t> testMap1;
-    EXPECT_OK(testMap1.getOrCreate(TEST_MAP_SIZE, PINNED_MAP_PATH, BPF_MAP_TYPE_HASH));
+    EXPECT_NE(0, access(PINNED_MAP_PATH, R_OK));
+    BpfMap<uint32_t, uint32_t> testMap1(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
+    ASSERT_EQ(0, bpfFdPin(testMap1.getMap(), PINNED_MAP_PATH));
     EXPECT_EQ(0, access(PINNED_MAP_PATH, R_OK));
     checkMapValid(testMap1);
-    EXPECT_EQ(0, testMap1.getPinnedPath().compare(PINNED_MAP_PATH));
     BpfMap<uint32_t, uint32_t> testMap2;
-    EXPECT_OK(testMap2.getOrCreate(TEST_MAP_SIZE, PINNED_MAP_PATH, BPF_MAP_TYPE_HASH));
+    EXPECT_OK(testMap2.init(PINNED_MAP_PATH));
     checkMapValid(testMap2);
-    EXPECT_EQ(0, testMap2.getPinnedPath().compare(PINNED_MAP_PATH));
     uint32_t key = TEST_KEY1;
     uint32_t value = TEST_VALUE1;
     writeToMapAndCheck(testMap1, key, value);

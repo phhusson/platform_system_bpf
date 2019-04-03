@@ -28,6 +28,14 @@ static uint32_t (*bpf_get_socket_uid)(struct __sk_buff* skb) = (void*)BPF_FUNC_g
 static int (*bpf_skb_load_bytes)(struct __sk_buff* skb, int off, void* to,
                                  int len) = (void*)BPF_FUNC_skb_load_bytes;
 
+static int (*bpf_skb_change_proto)(struct __sk_buff* skb, __be16 proto,
+                                   __u64 flags) = (void*)BPF_FUNC_skb_change_proto;
+static int (*bpf_l3_csum_replace)(struct __sk_buff* skb, __u32 offset, __u64 from, __u64 to,
+                                  __u64 flags) = (void*)BPF_FUNC_l3_csum_replace;
+static int (*bpf_l4_csum_replace)(struct __sk_buff* skb, __u32 offset, __u64 from, __u64 to,
+                                  __u64 flags) = (void*)BPF_FUNC_l4_csum_replace;
+static int (*bpf_redirect)(__u32 ifindex, __u64 flags) = (void*)BPF_FUNC_redirect;
+
 /*
  * Map structure to be used by Android eBPF C programs. The Android eBPF loader
  * uses this structure from eBPF object to create maps at boot time.

@@ -57,16 +57,6 @@ class BpfMap {
         }
     }
 
-    netdutils::Status pinToPath(const std::string& path) {
-        int ret = bpfFdPin(mMapFd, path.c_str());
-        if (ret) {
-            return netdutils::statusFromErrno(errno,
-                                              base::StringPrintf("pin to %s failed", path.c_str()));
-        }
-        mPinnedPath = path;
-        return netdutils::status::ok;
-    }
-
     netdutils::StatusOr<Key> getFirstKey() const {
         Key firstKey;
         if (getFirstMapKey(mMapFd, &firstKey)) {
@@ -110,10 +100,8 @@ class BpfMap {
         return netdutils::status::ok;
     }
 
-    // Function that tries to get map from a pinned path, if the map doesn't
-    // exist yet, create a new one and pinned to the path.
-    netdutils::Status getOrCreate(const uint32_t maxEntries, const char* path,
-                                  const bpf_map_type mapType);
+    // Function that tries to get map from a pinned path.
+    netdutils::Status init(const char* path);
 
     // Iterate through the map and handle each key retrieved based on the filter
     // without modification of map content.
@@ -139,22 +127,14 @@ class BpfMap {
 
     const base::unique_fd& getMap() const { return mMapFd; };
 
-    const std::string getPinnedPath() const { return mPinnedPath; };
-
     // Move constructor
     void operator=(BpfMap<Key, Value>&& other) noexcept {
         mMapFd = std::move(other.mMapFd);
-        if (!other.mPinnedPath.empty()) {
-            mPinnedPath = other.mPinnedPath;
-        } else {
-            mPinnedPath.clear();
-        }
         other.reset();
     }
 
     void reset(int fd = -1) {
         mMapFd.reset(fd);
-        mPinnedPath.clear();
     }
 
     bool isValid() const { return mMapFd != -1; }
@@ -183,42 +163,16 @@ class BpfMap {
 
   private:
     base::unique_fd mMapFd;
-    std::string mPinnedPath;
 };
 
 template <class Key, class Value>
-netdutils::Status BpfMap<Key, Value>::getOrCreate(const uint32_t maxEntries, const char* path,
-                                                  bpf_map_type mapType) {
-    int ret = access(path, R_OK);
-    /* Check the pinned location first to check if the map is already there.
-     * otherwise create a new one.
-     */
-    if (ret == 0) {
-        mMapFd = base::unique_fd(mapRetrieve(path, 0));
-        if (mMapFd == -1) {
-            reset();
-            return netdutils::statusFromErrno(
+netdutils::Status BpfMap<Key, Value>::init(const char* path) {
+    mMapFd = base::unique_fd(mapRetrieve(path, 0));
+    if (mMapFd == -1) {
+        reset();
+        return netdutils::statusFromErrno(
                 errno,
                 base::StringPrintf("pinned map not accessible or does not exist: (%s)\n", path));
-        }
-        mPinnedPath = path;
-    } else if (ret == -1 && errno == ENOENT) {
-        mMapFd = base::unique_fd(
-            createMap(mapType, sizeof(Key), sizeof(Value), maxEntries, BPF_F_NO_PREALLOC));
-        if (mMapFd == -1) {
-            reset();
-            return netdutils::statusFromErrno(errno,
-                                              base::StringPrintf("map create failed!: %s", path));
-        }
-        netdutils::Status pinStatus = pinToPath(path);
-        if (!isOk(pinStatus)) {
-            reset();
-            return pinStatus;
-        }
-        mPinnedPath = path;
-    } else {
-        return netdutils::statusFromErrno(
-            errno, base::StringPrintf("pinned map not accessible: %s", path));
     }
     return netdutils::status::ok;
 }
