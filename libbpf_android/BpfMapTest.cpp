@@ -57,11 +57,13 @@ class BpfMapTest : public testing::Test {
     void SetUp() {
         SKIP_IF_BPF_NOT_SUPPORTED;
 
+        EXPECT_EQ(0, setrlimitForTest());
         if (!access(PINNED_MAP_PATH, R_OK)) {
             EXPECT_EQ(0, remove(PINNED_MAP_PATH));
         }
         mMapFd = createMap(BPF_MAP_TYPE_HASH, sizeof(uint32_t), sizeof(uint32_t), TEST_MAP_SIZE,
                            BPF_F_NO_PREALLOC);
+        EXPECT_LE(0, mMapFd);
     }
 
     void TearDown() {
