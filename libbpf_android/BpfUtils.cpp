@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
@@ -235,6 +236,19 @@ int synchronizeKernelRCU() {
         return ret;
     }
     return 0;
+}
+
+int setrlimitForTest() {
+    // Set the memory rlimit for the test process if the default MEMLOCK rlimit is not enough.
+    struct rlimit limit = {
+            .rlim_cur = TEST_LIMIT,
+            .rlim_max = TEST_LIMIT,
+    };
+    int res = setrlimit(RLIMIT_MEMLOCK, &limit);
+    if (res) {
+        ALOGE("Failed to set the default MEMLOCK rlimit: %s", strerror(errno));
+    }
+    return res;
 }
 
 std::string BpfLevelToString(BpfLevel bpfLevel) {
