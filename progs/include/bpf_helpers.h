@@ -17,6 +17,7 @@ static int (*bpf_map_update_elem)(void* map, void* key, void* value,
                                   unsigned long long flags) = (void*) BPF_FUNC_map_update_elem;
 static int (*bpf_map_delete_elem)(void* map, void* key) = (void*) BPF_FUNC_map_delete_elem;
 static int (*bpf_probe_read)(void* dst, int size, void* unsafe_ptr) = (void*) BPF_FUNC_probe_read;
+static int (*bpf_probe_read_str)(void* dst, int size, void* unsafe_ptr) = (void*) BPF_FUNC_probe_read_str;
 static unsigned long long (*bpf_ktime_get_ns)(void) = (void*) BPF_FUNC_ktime_get_ns;
 static int (*bpf_trace_printk)(const char* fmt, int fmt_size, ...) = (void*) BPF_FUNC_trace_printk;
 static unsigned long long (*bpf_get_current_pid_tgid)(void) = (void*) BPF_FUNC_get_current_pid_tgid;
