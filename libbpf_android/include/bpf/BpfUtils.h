@@ -162,8 +162,6 @@ uint64_t getSocketCookie(int sockFd);
 int setrlimitForTest();
 std::string BpfLevelToString(BpfLevel BpfLevel);
 BpfLevel getBpfSupportLevel();
-int parseProgramsFromFile(const char* path, BpfProgInfo* programs, size_t size,
-                          const std::vector<BpfMapInfo>& mapPatterns);
 int synchronizeKernelRCU();
 
 #define SKIP_IF_BPF_NOT_SUPPORTED                                                    \
