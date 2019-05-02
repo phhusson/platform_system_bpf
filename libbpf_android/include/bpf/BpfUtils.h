@@ -177,9 +177,6 @@ int synchronizeKernelRCU();
         if (android::bpf::getBpfSupportLevel() != android::bpf::BpfLevel::NONE) return; \
     } while (0)
 
-constexpr int BPF_CONTINUE = 0;
-constexpr int BPF_DELETED = 1;
-
 bool operator==(const StatsValue& lhs, const StatsValue& rhs);
 bool operator==(const UidTag& lhs, const UidTag& rhs);
 bool operator==(const StatsKey& lhs, const StatsKey& rhs);
