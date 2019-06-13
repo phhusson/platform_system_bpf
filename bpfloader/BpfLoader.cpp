@@ -86,12 +86,6 @@ void loadAllElfObjects(void) {
 }
 
 int main() {
-    std::string value = android::base::GetProperty("bpf.progs_loaded", "");
-    if (value == "1") {
-        ALOGI("Property bpf.progs_loaded is set, progs already loaded.\n");
-        return 0;
-    }
-
     if (android::bpf::getBpfSupportLevel() != android::bpf::BpfLevel::NONE) {
         // Load all ELF objects, create programs and maps, and pin them
         loadAllElfObjects();
