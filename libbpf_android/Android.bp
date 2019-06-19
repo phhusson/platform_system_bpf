@@ -44,8 +44,8 @@ cc_library {
 
     shared_libs: [
         "libbase",
-        "libcutils",
         "libutils",
+        "libprocessgroup",
         "liblog",
         "libnetdutils",
         "libbpf",
