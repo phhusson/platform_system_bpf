@@ -46,8 +46,19 @@ namespace bpf {
 template <class Key, class Value>
 class BpfMap {
   public:
-    BpfMap<Key, Value>() : mMapFd(-1){};
+    BpfMap<Key, Value>() {};
     explicit BpfMap<Key, Value>(int fd) : mMapFd(fd){};
+
+    // We could technically implement this constructor either with
+    //   : mMapFd(dup(fd)) {}        // fd valid in caller, we have our own local copy
+    // or
+    //   : mMapFd(fd.release()) {}   // fd no longer valid in caller, we 'stole' it
+    //
+    // However, I think we're much better off with a compile time failure, since
+    // it's better for whoever passes in a unique_fd to think twice about whether
+    // they're trying to pass in ownership or not.
+    explicit BpfMap<Key, Value>(base::unique_fd fd) = delete;
+
     BpfMap<Key, Value>(bpf_map_type map_type, uint32_t max_entries, uint32_t map_flags) {
         int map_fd = createMap(map_type, sizeof(Key), sizeof(Value), max_entries, map_flags);
         if (map_fd < 0) {
