@@ -27,7 +27,7 @@ using ::testing::Test;
 
 constexpr const char tp_prog_path[] =
         "/sys/fs/bpf/prog_bpf_load_tp_prog_tracepoint_sched_sched_switch";
-constexpr const char tp_map_path[] = "/sys/fs/bpf/map_bpf_load_tp_prog_cpu_pid";
+constexpr const char tp_map_path[] = "/sys/fs/bpf/map_bpf_load_tp_prog_cpu_pid_map";
 
 namespace android {
 namespace bpf {
@@ -50,9 +50,6 @@ class BpfLoadTest : public testing::Test {
 
         mMapFd = bpf_obj_get(tp_map_path);
         EXPECT_GT(mMapFd, 0);
-
-        int ret = bpf_attach_tracepoint(mProgFd, "sched", "sched_switch");
-        EXPECT_NE(ret, 0);
     }
 
     void TearDown() {

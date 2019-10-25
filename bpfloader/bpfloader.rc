@@ -6,4 +6,3 @@ service bpfloader /system/bin/bpfloader
     # the global rlimit. Once bpfloader is running as its own user in the
     # future, it will have dedicated rlimit to itself and this can be 8MB.
     rlimit memlock 67108864 67108864
-    oneshot
