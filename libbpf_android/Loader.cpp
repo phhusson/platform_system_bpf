@@ -24,11 +24,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 
 #include "LoaderUtils.h"
 #include "include/libbpf_android.h"
+#include <bpf/BpfUtils.h>
 
 #include <cstdlib>
 #include <fstream>
@@ -96,6 +98,7 @@ struct bpf_map_def {
     unsigned int map_flags;
     unsigned int inner_map_idx;
     unsigned int numa_node;
+    bool clear_on_init;
 };
 
 static int readElfHeader(ifstream& elfFile, Elf64_Ehdr* eh) {
@@ -403,6 +406,10 @@ static int createMaps(const char* elfPath, ifstream& elfFile, vector<unique_fd>&
         bool reuse = false;
 
         mapPinLoc = string(BPF_FS_PATH) + "map_" + fname + "_" + string(mapNames[i]);
+        if (access(mapPinLoc.c_str(), F_OK) == 0 && md[i].clear_on_init) {
+            ret = unlink(mapPinLoc.c_str());
+            if (ret < 0) return ret;
+        }
         if (access(mapPinLoc.c_str(), F_OK) == 0) {
             fd.reset(bpf_obj_get(mapPinLoc.c_str()));
             ALOGD("bpf_create_map reusing map %s, ret: %d\n", mapNames[i].c_str(), fd.get());
