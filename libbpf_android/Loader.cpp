@@ -524,8 +524,8 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
             fd = bpf_prog_load(cs[i].type, cs[i].name.c_str(), (struct bpf_insn*)cs[i].data.data(),
                                cs[i].data.size(), license.c_str(), kvers, 0,
                                log_buf.data(), log_buf.size());
-            ALOGD("New bpf core prog_load for %s (%s) returned: %d\n", elfPath, cs[i].name.c_str(),
-                  fd);
+            ALOGD("bpf_prog_load lib call for %s (%s) returned: %d (%s)\n", elfPath,
+                  cs[i].name.c_str(), fd, std::strerror(errno));
 
             if (fd <= 0)
                 ALOGE("bpf_prog_load: log_buf contents: %s\n", (char *)log_buf.data());
