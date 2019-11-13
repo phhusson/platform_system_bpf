@@ -108,7 +108,6 @@ cc_test {
     ],
 
     required: [
-        "bpf_autoclear_maps.o",
         "bpf_load_tp_prog.o",
     ],
 }

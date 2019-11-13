@@ -43,17 +43,16 @@ static int (*bpf_map_update_elem_unsafe)(void* map, void* key, void* value,
 static int (*bpf_map_delete_elem_unsafe)(void* map, void* key) = (void*)BPF_FUNC_map_delete_elem;
 
 /* type safe macro to declare a map and related accessor functions */
-#define DEFINE_BPF_MAP_NO_ACCESSORS_CLEAR(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, clear) \
+#define DEFINE_BPF_MAP_NO_ACCESSORS(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries) \
     struct bpf_map_def SEC("maps") the_map = {                                          \
             .type = BPF_MAP_TYPE_##TYPE,                                                \
             .key_size = sizeof(TypeOfKey),                                              \
             .value_size = sizeof(TypeOfValue),                                          \
             .max_entries = (num_entries),                                               \
-            .clear_on_init = (clear),                                                    \
     };
 
-#define DEFINE_BPF_MAP_CLEAR(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, clear) \
-    DEFINE_BPF_MAP_NO_ACCESSORS_CLEAR(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, clear) \
+#define DEFINE_BPF_MAP(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries)                 \
+    DEFINE_BPF_MAP_NO_ACCESSORS(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries)        \
                                                                                            \
     static inline __always_inline __unused TypeOfValue* bpf_##the_map##_lookup_elem(       \
             TypeOfKey* k) {                                                                \
@@ -68,13 +67,6 @@ static int (*bpf_map_delete_elem_unsafe)(void* map, void* key) = (void*)BPF_FUNC
     static inline __always_inline __unused int bpf_##the_map##_delete_elem(TypeOfKey* k) { \
         return bpf_map_delete_elem_unsafe(&the_map, k);                                    \
     };
-
-/* type safe macro to declare a map and related accessor functions */
-#define DEFINE_BPF_MAP_NO_ACCESSORS(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries) \
-    DEFINE_BPF_MAP_NO_ACCESSORS_CLEAR(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, false)
-
-#define DEFINE_BPF_MAP(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries)                 \
-    DEFINE_BPF_MAP_CLEAR(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, false)
 
 static int (*bpf_probe_read)(void* dst, int size, void* unsafe_ptr) = (void*) BPF_FUNC_probe_read;
 static int (*bpf_probe_read_str)(void* dst, int size, void* unsafe_ptr) = (void*) BPF_FUNC_probe_read_str;
@@ -102,5 +94,4 @@ struct bpf_map_def {
     unsigned int map_flags;
     unsigned int pad1;
     unsigned int pad2;
-    bool clear_on_init;
 };

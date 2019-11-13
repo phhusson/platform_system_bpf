@@ -15,11 +15,8 @@
  */
 
 #include <android-base/macros.h>
-#include <android-base/stringprintf.h>
-#include <android-base/strings.h>
 #include <gtest/gtest.h>
 #include <stdlib.h>
-#include <sys/sysinfo.h>
 #include <unistd.h>
 #include <iostream>
 #include "include/bpf/BpfMap.h"
@@ -31,8 +28,6 @@ using ::testing::Test;
 constexpr const char tp_prog_path[] =
         "/sys/fs/bpf/prog_bpf_load_tp_prog_tracepoint_sched_sched_switch";
 constexpr const char tp_map_path[] = "/sys/fs/bpf/map_bpf_load_tp_prog_cpu_pid_map";
-
-constexpr const char tp_autoclear_map_path_prefix[] = "/sys/fs/bpf/map_bpf_autoclear_maps_autoclear_";
 
 namespace android {
 namespace bpf {
@@ -95,40 +90,6 @@ TEST_F(BpfLoadTest, bpfCheckMap) {
     SKIP_IF_BPF_NOT_SUPPORTED;
 
     checkMapNonZero();
-}
-
-TEST(BpfLoadAutoclearTest, bpfCheckMapClearing) {
-    SKIP_IF_BPF_NOT_SUPPORTED;
-
-    for (int i = 0; i < 2; i++) {
-        EXPECT_EQ(android::bpf::loadProg("/system/etc/bpf/bpf_autoclear_maps.o"), 0);
-        for (const auto &name : {"hash", "percpu_hash", "array", "percpu_array"}) {
-            auto path = android::base::StringPrintf("%s%s", tp_autoclear_map_path_prefix, name);
-            android::base::unique_fd mapFd(bpf_obj_get(path.c_str()));
-            ASSERT_GT(mapFd, 0);
-
-            size_t sz = android::base::StartsWith(name, "percpu") ? get_nprocs_conf() : 1;
-            std::vector<uint32_t> vals(sz);
-
-            uint32_t key;
-            auto ret = android::bpf::getFirstMapKey(mapFd, &key);
-            if (android::base::EndsWith(name, "hash")) {
-                EXPECT_NE(ret, 0);
-                EXPECT_EQ(errno, ENOENT);
-            } else {
-                uint32_t prevKey;
-                std::vector<uint32_t> zeroes(vals.size(),0);
-                do {
-                    ASSERT_EQ(findMapEntry(mapFd, &key, vals.data()),0);
-                    EXPECT_EQ(memcmp(vals.data(), zeroes.data(), vals.size()), 0);
-                } while (prevKey = key, !android::bpf::getNextMapKey(mapFd, &prevKey, &key));
-            }
-            key = 0;
-            std::fill(vals.begin(), vals.end(), 1);
-            ASSERT_EQ(writeToMapEntry(mapFd, &key, vals.data(), BPF_ANY), 0);
-            if (i == 1) unlink(path.c_str());
-        }
-    }
 }
 
 }  // namespace bpf
