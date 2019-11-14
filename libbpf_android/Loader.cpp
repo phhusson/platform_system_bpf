@@ -299,6 +299,7 @@ static int readCodeSections(ifstream& elfFile, vector<codeSection>& cs) {
 
         enum bpf_prog_type ptype = getSectionType(name);
         if (ptype != BPF_PROG_TYPE_UNSPEC) {
+            deslash(name);
             cs_temp.type = ptype;
             cs_temp.name = name;
 
@@ -513,21 +514,19 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
 
         // Format of pin location is
         // /sys/fs/bpf/prog_<filename>_<mapname>
-        auto progName = cs[i].name;
-        deslash(progName);
-        progPinLoc = string(BPF_FS_PATH) + "prog_" + fname + "_" + progName;
+        progPinLoc = string(BPF_FS_PATH) + "prog_" + fname + "_" + cs[i].name;
         if (access(progPinLoc.c_str(), F_OK) == 0) {
             fd = bpf_obj_get(progPinLoc.c_str());
-            ALOGD("New bpf prog load reusing prog %s, ret: %d\n", progName.c_str(), fd);
+            ALOGD("New bpf prog load reusing prog %s, ret: %d\n", cs[i].name.c_str(), fd);
             reuse = true;
         } else {
             vector<char> log_buf(BPF_LOAD_LOG_SZ, 0);
 
-            fd = bpf_prog_load(cs[i].type, progName.c_str(), (struct bpf_insn*)cs[i].data.data(),
+            fd = bpf_prog_load(cs[i].type, cs[i].name.c_str(), (struct bpf_insn*)cs[i].data.data(),
                                cs[i].data.size(), license.c_str(), kvers, 0,
                                log_buf.data(), log_buf.size());
             ALOGD("bpf_prog_load lib call for %s (%s) returned: %d (%s)\n", elfPath,
-                  progName.c_str(), fd, std::strerror(errno));
+                  cs[i].name.c_str(), fd, std::strerror(errno));
 
             if (fd <= 0)
                 ALOGE("bpf_prog_load: log_buf contents: %s\n", (char *)log_buf.data());
@@ -547,19 +546,8 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
     return 0;
 }
 
-int attachPrograms(const vector<codeSection> &cs) {
-    for (const auto &section : cs) {
-        if (section.type != BPF_PROG_TYPE_TRACEPOINT) continue;
-        auto eventData = android::base::Split(section.name, "/");
-        if (eventData.size() != 3) return -1;
-        int ret = bpf_attach_tracepoint(section.prog_fd, eventData[1].c_str(), eventData[2].c_str());
-        if (ret < 0) return ret;
-    }
-    return 0;
-}
-
 int loadProg(const char* elfPath) {
-    vector<char> license, attach;
+    vector<char> license;
     vector<codeSection> cs;
     vector<unique_fd> mapFds;
     int ret;
@@ -596,18 +584,9 @@ int loadProg(const char* elfPath) {
     applyMapRelo(elfFile, mapFds, cs);
 
     ret = loadCodeSections(elfPath, cs, string(license.data()));
-    if (ret) {
-        ALOGE("Failed to load programs, loadCodeSections ret=%d\n", ret);
-        return ret;
-    }
+    if (ret) ALOGE("Failed to load programs, loadCodeSections ret=%d\n", ret);
 
-    // Treat absent "attach" section as attach = false
-    if (!readSectionByName("attach", elfFile, attach) && *(bool*)attach.data()) {
-        ret = attachPrograms(cs);
-        if (ret) return ret;
-    }
-
-    return 0;
+    return ret;
 }
 
 }  // namespace bpf
