@@ -57,19 +57,6 @@ namespace bpf {
  *  is. The bpf kernel code will performs a much stricter check to ensure all unused field is 0. So
  *  this syscall will normally fail with E2BIG if we don't do a memset to bpf_attr.
  */
-bool operator==(const StatsKey& lhs, const StatsKey& rhs) {
-    return ((lhs.uid == rhs.uid) && (lhs.tag == rhs.tag) && (lhs.counterSet == rhs.counterSet) &&
-            (lhs.ifaceIndex == rhs.ifaceIndex));
-}
-
-bool operator==(const UidTag& lhs, const UidTag& rhs) {
-    return ((lhs.uid == rhs.uid) && (lhs.tag == rhs.tag));
-}
-
-bool operator==(const StatsValue& lhs, const StatsValue& rhs) {
-    return ((lhs.rxBytes == rhs.rxBytes) && (lhs.txBytes == rhs.txBytes) &&
-            (lhs.rxPackets == rhs.rxPackets) && (lhs.txPackets == rhs.txPackets));
-}
 
 int bpf(int cmd, Slice bpfAttr) {
     return syscall(__NR_bpf, cmd, bpfAttr.base(), bpfAttr.size());
