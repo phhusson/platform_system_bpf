@@ -49,23 +49,9 @@
 #include "bpf/BpfUtils.h"
 
 using android::base::EndsWith;
-using android::base::unique_fd;
 using std::string;
 
 #define BPF_PROG_PATH "/system/etc/bpf/"
-
-#define CLEANANDEXIT(ret, mapPatterns)                    \
-    do {                                                  \
-        for (size_t i = 0; i < mapPatterns.size(); i++) { \
-            if (mapPatterns[i].fd > -1) {                 \
-                close(mapPatterns[i].fd);                 \
-            }                                             \
-        }                                                 \
-        return ret;                                       \
-    } while (0)
-
-using android::bpf::BpfMapInfo;
-using android::bpf::BpfProgInfo;
 
 void loadAllElfObjects(void) {
     DIR* dir;
