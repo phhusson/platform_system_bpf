@@ -36,30 +36,7 @@
 #define ptr_to_u64(x) ((uint64_t)(uintptr_t)(x))
 #define DEFAULT_LOG_LEVEL 1
 
-#define MAP_LD_CMD_HEAD 0x18
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*(a)))
-
-// The BPF instruction bytes that we need to replace. x is a placeholder (e.g., COOKIE_TAG_MAP).
-#define BPF_MAP_SEARCH_PATTERN(x)                                                               \
-    {                                                                                           \
-        0x18, 0x01, 0x00, 0x00,                                                                 \
-        (x)[0], (x)[1], (x)[2], (x)[3],                                                         \
-        0x00, 0x00, 0x00, 0x00,                                                                 \
-        (x)[4], (x)[5], (x)[6], (x)[7]                                                          \
-    }
-
-// The bytes we'll replace them with. x is the actual fd number for the map at runtime.
-// The second byte is changed from 0x01 to 0x11 since 0x11 is the special command used
-// for bpf map fd loading. The original 0x01 is only a normal load command.
-#define BPF_MAP_REPLACE_PATTERN(x)                                                              \
-    {                                                                                           \
-        0x18, 0x11, 0x00, 0x00,                                                                 \
-        (x)[0], (x)[1], (x)[2], (x)[3],                                                         \
-        0x00, 0x00, 0x00, 0x00,                                                                 \
-        (x)[4], (x)[5], (x)[6], (x)[7]                                                          \
-    }
-
-#define MAP_CMD_SIZE 16
 
 #define TEST_LIMIT 8388608
 
@@ -98,30 +75,7 @@ struct IfaceValue {
     char name[IFNAMSIZ];
 };
 
-struct BpfProgInfo {
-    bpf_attach_type attachType;
-    const char* path;
-    const char* name;
-    bpf_prog_type loadType;
-    base::unique_fd fd;
-};
-
 int mapRetrieve(const char* pathname, uint32_t flags);
-
-struct BpfMapInfo {
-    std::array<uint8_t, MAP_CMD_SIZE> search;
-    std::array<uint8_t, MAP_CMD_SIZE> replace;
-    const int fd;
-    std::string path;
-
-    BpfMapInfo(uint64_t dummyFd, const char* mapPath)
-        : BpfMapInfo(dummyFd, android::bpf::mapRetrieve(mapPath, 0)) {}
-
-    BpfMapInfo(uint64_t dummyFd, int realFd, const char* mapPath = "") : fd(realFd), path(mapPath) {
-        search = BPF_MAP_SEARCH_PATTERN((uint8_t*)&dummyFd);
-        replace = BPF_MAP_REPLACE_PATTERN((uint8_t*)&realFd);
-    }
-};
 
 enum class BpfLevel {
     // Devices shipped before P or kernel version is lower than 4.9 do not
