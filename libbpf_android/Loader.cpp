@@ -36,6 +36,7 @@
 #include <string>
 #include <vector>
 
+#include <android-base/properties.h>
 #include <android-base/strings.h>
 #include <android-base/unique_fd.h>
 
@@ -587,6 +588,12 @@ int loadProg(const char* elfPath) {
     if (ret) ALOGE("Failed to load programs, loadCodeSections ret=%d\n", ret);
 
     return ret;
+}
+
+void waitForProgsLoaded() {
+    while (!android::base::WaitForProperty("bpf.progs_loaded", "1", std::chrono::seconds(5))) {
+        ALOGW("Waited 5s for bpf.progs_loaded, still waiting...");
+    }
 }
 
 }  // namespace bpf
