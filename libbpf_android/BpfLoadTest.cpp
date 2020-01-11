@@ -81,10 +81,10 @@ class BpfLoadTest : public testing::Test {
 
             UNUSED(key);
             UNUSED(map);
-            return android::netdutils::status::ok;
+            return base::Result<void>();
         };
 
-        EXPECT_OK(m.iterateWithValue(iterFunc));
+        EXPECT_TRUE(m.iterateWithValue(iterFunc));
         EXPECT_EQ(non_zero, 1);
     }
 };

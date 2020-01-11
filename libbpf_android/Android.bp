@@ -47,7 +47,6 @@ cc_library {
         "libutils",
         "libprocessgroup",
         "liblog",
-        "libnetdutils",
         "libbpf",
     ],
     header_libs: [
@@ -81,7 +80,6 @@ cc_test {
         "libbpf_android",
         "libbase",
         "liblog",
-        "libnetdutils",
         "libutils",
     ],
     require_root: true,
@@ -105,7 +103,6 @@ cc_test {
         "libbpf",
         "libbase",
         "liblog",
-        "libnetdutils",
         "libutils",
     ],
 
