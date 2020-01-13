@@ -23,8 +23,13 @@
 
 namespace android {
 namespace bpf {
+
 // BPF loader implementation. Loads an eBPF ELF object
 int loadProg(const char* elfpath);
+
+// Wait for bpfloader to load BPF programs.
+void waitForProgsLoaded();
+
 }  // namespace bpf
 }  // namespace android
 
