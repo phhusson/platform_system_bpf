@@ -54,6 +54,7 @@ cc_library {
         "libbpf_android_headers"
     ],
     export_header_lib_headers: ["libbpf_android_headers"],
+    export_shared_lib_headers: ["libbpf"],
     local_include_dirs: ["include"],
 
     defaults: ["bpf_defaults"],
