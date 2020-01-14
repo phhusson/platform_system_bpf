@@ -125,30 +125,6 @@ int getFirstMapKey(const base::unique_fd& map_fd, void* firstKey) {
     return bpf(BPF_MAP_GET_NEXT_KEY, Slice(&attr, sizeof(attr)));
 }
 
-int bpfProgLoad(bpf_prog_type prog_type, Slice bpf_insns, const char* license,
-                uint32_t kern_version, Slice bpf_log) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
-    attr.prog_type = prog_type;
-    attr.insns = ptr_to_u64(bpf_insns.base());
-    attr.insn_cnt = bpf_insns.size() / sizeof(struct bpf_insn);
-    attr.license = ptr_to_u64((void*)license);
-    attr.log_buf = ptr_to_u64(bpf_log.base());
-    attr.log_size = bpf_log.size();
-    attr.log_level = DEFAULT_LOG_LEVEL;
-    attr.kern_version = kern_version;
-    int ret = bpf(BPF_PROG_LOAD, Slice(&attr, sizeof(attr)));
-
-    if (ret < 0) {
-        std::string prog_log = netdutils::toString(bpf_log);
-        std::istringstream iss(prog_log);
-        for (std::string line; std::getline(iss, line);) {
-            ALOGE("%s", line.c_str());
-        }
-    }
-    return ret;
-}
-
 int bpfFdPin(const base::unique_fd& map_fd, const char* pathname) {
     bpf_attr attr;
     memset(&attr, 0, sizeof(attr));
