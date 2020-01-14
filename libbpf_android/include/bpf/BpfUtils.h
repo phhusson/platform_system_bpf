@@ -43,38 +43,6 @@
 namespace android {
 namespace bpf {
 
-struct UidTag {
-    uint32_t uid;
-    uint32_t tag;
-};
-
-struct StatsKey {
-    uint32_t uid;
-    uint32_t tag;
-    uint32_t counterSet;
-    uint32_t ifaceIndex;
-};
-
-struct StatsValue {
-    uint64_t rxPackets;
-    uint64_t rxBytes;
-    uint64_t txPackets;
-    uint64_t txBytes;
-};
-
-struct Stats {
-    uint64_t rxBytes;
-    uint64_t rxPackets;
-    uint64_t txBytes;
-    uint64_t txPackets;
-    uint64_t tcpRxPackets;
-    uint64_t tcpTxPackets;
-};
-
-struct IfaceValue {
-    char name[IFNAMSIZ];
-};
-
 int mapRetrieve(const char* pathname, uint32_t flags);
 
 enum class BpfLevel {
