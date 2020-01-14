@@ -51,7 +51,7 @@ namespace bpf {
 /*  The bpf_attr is a union which might have a much larger size then the struct we are using, while
  *  The inline initializer only reset the field we are using and leave the reset of the memory as
  *  is. The bpf kernel code will performs a much stricter check to ensure all unused field is 0. So
- *  this syscall will normally fail with E2BIG if we don't do a memset to bpf_attr.
+ *  this syscall will normally fail with E2BIG if we don't fully zero bpf_attr.
  */
 
 int bpf(int cmd, bpf_attr& attr) {
@@ -60,8 +60,7 @@ int bpf(int cmd, bpf_attr& attr) {
 
 int createMap(bpf_map_type map_type, uint32_t key_size, uint32_t value_size, uint32_t max_entries,
               uint32_t map_flags) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.map_type = map_type;
     attr.key_size = key_size;
     attr.value_size = value_size;
@@ -72,8 +71,7 @@ int createMap(bpf_map_type map_type, uint32_t key_size, uint32_t value_size, uin
 }
 
 int writeToMapEntry(const base::unique_fd& map_fd, void* key, void* value, uint64_t flags) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.map_fd = map_fd.get();
     attr.key = ptr_to_u64(key);
     attr.value = ptr_to_u64(value);
@@ -83,8 +81,7 @@ int writeToMapEntry(const base::unique_fd& map_fd, void* key, void* value, uint6
 }
 
 int findMapEntry(const base::unique_fd& map_fd, void* key, void* value) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.map_fd = map_fd.get();
     attr.key = ptr_to_u64(key);
     attr.value = ptr_to_u64(value);
@@ -93,8 +90,7 @@ int findMapEntry(const base::unique_fd& map_fd, void* key, void* value) {
 }
 
 int deleteMapEntry(const base::unique_fd& map_fd, void* key) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.map_fd = map_fd.get();
     attr.key = ptr_to_u64(key);
 
@@ -102,8 +98,7 @@ int deleteMapEntry(const base::unique_fd& map_fd, void* key) {
 }
 
 int getNextMapKey(const base::unique_fd& map_fd, void* key, void* next_key) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.map_fd = map_fd.get();
     attr.key = ptr_to_u64(key);
     attr.next_key = ptr_to_u64(next_key);
@@ -112,8 +107,7 @@ int getNextMapKey(const base::unique_fd& map_fd, void* key, void* next_key) {
 }
 
 int getFirstMapKey(const base::unique_fd& map_fd, void* firstKey) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.map_fd = map_fd.get();
     attr.key = 0;
     attr.next_key = ptr_to_u64(firstKey);
@@ -122,8 +116,7 @@ int getFirstMapKey(const base::unique_fd& map_fd, void* firstKey) {
 }
 
 int bpfFdPin(const base::unique_fd& map_fd, const char* pathname) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.pathname = ptr_to_u64((void*)pathname);
     attr.bpf_fd = map_fd.get();
 
@@ -131,8 +124,7 @@ int bpfFdPin(const base::unique_fd& map_fd, const char* pathname) {
 }
 
 int bpfFdGet(const char* pathname, uint32_t flag) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.pathname = ptr_to_u64((void*)pathname);
     attr.file_flags = flag;
     return bpf(BPF_OBJ_GET, attr);
@@ -143,8 +135,7 @@ int mapRetrieve(const char* pathname, uint32_t flag) {
 }
 
 int attachProgram(bpf_attach_type type, uint32_t prog_fd, uint32_t cg_fd) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.target_fd = cg_fd;
     attr.attach_bpf_fd = prog_fd;
     attr.attach_type = type;
@@ -153,8 +144,7 @@ int attachProgram(bpf_attach_type type, uint32_t prog_fd, uint32_t cg_fd) {
 }
 
 int detachProgram(bpf_attach_type type, uint32_t cg_fd) {
-    bpf_attr attr;
-    memset(&attr, 0, sizeof(attr));
+    bpf_attr attr = {};
     attr.target_fd = cg_fd;
     attr.attach_type = type;
 
