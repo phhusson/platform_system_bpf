@@ -391,6 +391,7 @@ static int createMaps(const char* elfPath, ifstream& elfFile, vector<unique_fd>&
     string fname = pathToFilename(string(elfPath), true);
 
     ret = readSectionByName("maps", elfFile, mdData);
+    if (ret == -2) return 0;  // no maps to read
     if (ret) return ret;
     md.resize(mdData.size() / sizeof(struct bpf_map_def));
     memcpy(md.data(), mdData.data(), mdData.size());
