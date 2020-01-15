@@ -111,4 +111,5 @@ cc_test {
     required: [
         "bpf_load_tp_prog.o",
     ],
+    require_root: true,
 }
