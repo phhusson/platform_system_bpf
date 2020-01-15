@@ -27,7 +27,7 @@ using ::testing::Test;
 
 constexpr const char tp_prog_path[] =
         "/sys/fs/bpf/prog_bpf_load_tp_prog_tracepoint_sched_sched_switch";
-constexpr const char tp_map_path[] = "/sys/fs/bpf/map_bpf_load_tp_prog_cpu_pid";
+constexpr const char tp_map_path[] = "/sys/fs/bpf/map_bpf_load_tp_prog_cpu_pid_map";
 
 namespace android {
 namespace bpf {
