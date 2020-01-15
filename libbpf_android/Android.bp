@@ -85,6 +85,7 @@ cc_test {
         "libutils",
     ],
     require_root: true,
+    test_suites: ["general-tests"],
 }
 
 cc_test {
