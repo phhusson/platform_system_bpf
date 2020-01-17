@@ -43,8 +43,6 @@
 namespace android {
 namespace bpf {
 
-int mapRetrieve(const char* pathname, uint32_t flags);
-
 enum class BpfLevel {
     // Devices shipped before P or kernel version is lower than 4.9 do not
     // have eBPF enabled.
@@ -67,17 +65,96 @@ constexpr const uint64_t NONEXISTENT_COOKIE = 0;
 
 constexpr const int MINIMUM_API_REQUIRED = 28;
 
-int createMap(bpf_map_type map_type, uint32_t key_size, uint32_t value_size, uint32_t max_entries,
-              uint32_t map_flags);
-int writeToMapEntry(const base::unique_fd& map_fd, void* key, void* value, uint64_t flags);
-int findMapEntry(const base::unique_fd& map_fd, void* key, void* value);
-int deleteMapEntry(const base::unique_fd& map_fd, void* key);
-int getNextMapKey(const base::unique_fd& map_fd, void* key, void* next_key);
-int getFirstMapKey(const base::unique_fd& map_fd, void* firstKey);
-int bpfFdPin(const base::unique_fd& map_fd, const char* pathname);
-int bpfFdGet(const char* pathname, uint32_t flags);
-int attachProgram(bpf_attach_type type, uint32_t prog_fd, uint32_t cg_fd);
-int detachProgram(bpf_attach_type type, uint32_t cg_fd);
+/* Note: bpf_attr is a union which might have a much larger size then the anonymous struct portion
+ * of it that we are using.  The kernel's bpf() system call will perform a strict check to ensure
+ * all unused portions are zero.  It will fail with E2BIG if we don't fully zero bpf_attr.
+ */
+
+static inline int bpf(int cmd, const bpf_attr& attr) {
+    return syscall(__NR_bpf, cmd, &attr, sizeof(attr));
+}
+
+static inline int createMap(bpf_map_type map_type, uint32_t key_size, uint32_t value_size,
+                            uint32_t max_entries, uint32_t map_flags) {
+    return bpf(BPF_MAP_CREATE, {
+                                       .map_type = map_type,
+                                       .key_size = key_size,
+                                       .value_size = value_size,
+                                       .max_entries = max_entries,
+                                       .map_flags = map_flags,
+                               });
+}
+
+static inline int writeToMapEntry(const base::unique_fd& map_fd, void* key, void* value,
+                                  uint64_t flags) {
+    return bpf(BPF_MAP_UPDATE_ELEM, {
+                                            .map_fd = static_cast<__u32>(map_fd.get()),
+                                            .key = ptr_to_u64(key),
+                                            .value = ptr_to_u64(value),
+                                            .flags = flags,
+                                    });
+}
+
+static inline int findMapEntry(const base::unique_fd& map_fd, void* key, void* value) {
+    return bpf(BPF_MAP_LOOKUP_ELEM, {
+                                            .map_fd = static_cast<__u32>(map_fd.get()),
+                                            .key = ptr_to_u64(key),
+                                            .value = ptr_to_u64(value),
+                                    });
+}
+
+static inline int deleteMapEntry(const base::unique_fd& map_fd, void* key) {
+    return bpf(BPF_MAP_DELETE_ELEM, {
+                                            .map_fd = static_cast<__u32>(map_fd.get()),
+                                            .key = ptr_to_u64(key),
+                                    });
+}
+
+static inline int getNextMapKey(const base::unique_fd& map_fd, void* key, void* next_key) {
+    return bpf(BPF_MAP_GET_NEXT_KEY, {
+                                             .map_fd = static_cast<__u32>(map_fd.get()),
+                                             .key = ptr_to_u64(key),
+                                             .next_key = ptr_to_u64(next_key),
+                                     });
+}
+
+static inline int getFirstMapKey(const base::unique_fd& map_fd, void* firstKey) {
+    return getNextMapKey(map_fd, NULL, firstKey);
+}
+
+static inline int bpfFdPin(const base::unique_fd& map_fd, const char* pathname) {
+    return bpf(BPF_OBJ_PIN, {
+                                    .pathname = ptr_to_u64(pathname),
+                                    .bpf_fd = static_cast<__u32>(map_fd.get()),
+                            });
+}
+
+static inline int bpfFdGet(const char* pathname, uint32_t flag) {
+    return bpf(BPF_OBJ_GET, {
+                                    .pathname = ptr_to_u64(pathname),
+                                    .file_flags = flag,
+                            });
+}
+
+static inline int mapRetrieve(const char* pathname, uint32_t flag) {
+    return bpfFdGet(pathname, flag);
+}
+
+static inline int attachProgram(bpf_attach_type type, uint32_t prog_fd, uint32_t cg_fd) {
+    return bpf(BPF_PROG_ATTACH, {
+                                        .target_fd = cg_fd,
+                                        .attach_bpf_fd = prog_fd,
+                                        .attach_type = type,
+                                });
+}
+
+static inline int detachProgram(bpf_attach_type type, uint32_t cg_fd) {
+    return bpf(BPF_PROG_DETACH, {
+                                        .target_fd = cg_fd,
+                                        .attach_type = type,
+                                });
+}
+
 uint64_t getSocketCookie(int sockFd);
 int setrlimitForTest();
 std::string BpfLevelToString(BpfLevel BpfLevel);
