@@ -54,80 +54,73 @@ namespace bpf {
  *  this syscall will normally fail with E2BIG if we don't fully zero bpf_attr.
  */
 
-int bpf(int cmd, bpf_attr& attr) {
+static int bpf(int cmd, const bpf_attr& attr) {
     return syscall(__NR_bpf, cmd, &attr, sizeof(attr));
 }
 
 int createMap(bpf_map_type map_type, uint32_t key_size, uint32_t value_size, uint32_t max_entries,
               uint32_t map_flags) {
-    bpf_attr attr = {};
-    attr.map_type = map_type;
-    attr.key_size = key_size;
-    attr.value_size = value_size;
-    attr.max_entries = max_entries;
-    attr.map_flags = map_flags;
-
-    return bpf(BPF_MAP_CREATE, attr);
+    return bpf(BPF_MAP_CREATE, {
+                                       .map_type = map_type,
+                                       .key_size = key_size,
+                                       .value_size = value_size,
+                                       .max_entries = max_entries,
+                                       .map_flags = map_flags,
+                               });
 }
 
 int writeToMapEntry(const base::unique_fd& map_fd, void* key, void* value, uint64_t flags) {
-    bpf_attr attr = {};
-    attr.map_fd = map_fd.get();
-    attr.key = ptr_to_u64(key);
-    attr.value = ptr_to_u64(value);
-    attr.flags = flags;
-
-    return bpf(BPF_MAP_UPDATE_ELEM, attr);
+    return bpf(BPF_MAP_UPDATE_ELEM, {
+                                            .map_fd = static_cast<__u32>(map_fd.get()),
+                                            .key = ptr_to_u64(key),
+                                            .value = ptr_to_u64(value),
+                                            .flags = flags,
+                                    });
 }
 
 int findMapEntry(const base::unique_fd& map_fd, void* key, void* value) {
-    bpf_attr attr = {};
-    attr.map_fd = map_fd.get();
-    attr.key = ptr_to_u64(key);
-    attr.value = ptr_to_u64(value);
-
-    return bpf(BPF_MAP_LOOKUP_ELEM, attr);
+    return bpf(BPF_MAP_LOOKUP_ELEM, {
+                                            .map_fd = static_cast<__u32>(map_fd.get()),
+                                            .key = ptr_to_u64(key),
+                                            .value = ptr_to_u64(value),
+                                    });
 }
 
 int deleteMapEntry(const base::unique_fd& map_fd, void* key) {
-    bpf_attr attr = {};
-    attr.map_fd = map_fd.get();
-    attr.key = ptr_to_u64(key);
-
-    return bpf(BPF_MAP_DELETE_ELEM, attr);
+    return bpf(BPF_MAP_DELETE_ELEM, {
+                                            .map_fd = static_cast<__u32>(map_fd.get()),
+                                            .key = ptr_to_u64(key),
+                                    });
 }
 
 int getNextMapKey(const base::unique_fd& map_fd, void* key, void* next_key) {
-    bpf_attr attr = {};
-    attr.map_fd = map_fd.get();
-    attr.key = ptr_to_u64(key);
-    attr.next_key = ptr_to_u64(next_key);
-
-    return bpf(BPF_MAP_GET_NEXT_KEY, attr);
+    return bpf(BPF_MAP_GET_NEXT_KEY, {
+                                             .map_fd = static_cast<__u32>(map_fd.get()),
+                                             .key = ptr_to_u64(key),
+                                             .next_key = ptr_to_u64(next_key),
+                                     });
 }
 
 int getFirstMapKey(const base::unique_fd& map_fd, void* firstKey) {
-    bpf_attr attr = {};
-    attr.map_fd = map_fd.get();
-    attr.key = 0;
-    attr.next_key = ptr_to_u64(firstKey);
-
-    return bpf(BPF_MAP_GET_NEXT_KEY, attr);
+    return bpf(BPF_MAP_GET_NEXT_KEY, {
+                                             .map_fd = static_cast<__u32>(map_fd.get()),
+                                             .key = 0,
+                                             .next_key = ptr_to_u64(firstKey),
+                                     });
 }
 
 int bpfFdPin(const base::unique_fd& map_fd, const char* pathname) {
-    bpf_attr attr = {};
-    attr.pathname = ptr_to_u64((void*)pathname);
-    attr.bpf_fd = map_fd.get();
-
-    return bpf(BPF_OBJ_PIN, attr);
+    return bpf(BPF_OBJ_PIN, {
+                                    .pathname = ptr_to_u64(pathname),
+                                    .bpf_fd = static_cast<__u32>(map_fd.get()),
+                            });
 }
 
 int bpfFdGet(const char* pathname, uint32_t flag) {
-    bpf_attr attr = {};
-    attr.pathname = ptr_to_u64((void*)pathname);
-    attr.file_flags = flag;
-    return bpf(BPF_OBJ_GET, attr);
+    return bpf(BPF_OBJ_GET, {
+                                    .pathname = ptr_to_u64(pathname),
+                                    .file_flags = flag,
+                            });
 }
 
 int mapRetrieve(const char* pathname, uint32_t flag) {
@@ -135,20 +128,18 @@ int mapRetrieve(const char* pathname, uint32_t flag) {
 }
 
 int attachProgram(bpf_attach_type type, uint32_t prog_fd, uint32_t cg_fd) {
-    bpf_attr attr = {};
-    attr.target_fd = cg_fd;
-    attr.attach_bpf_fd = prog_fd;
-    attr.attach_type = type;
-
-    return bpf(BPF_PROG_ATTACH, attr);
+    return bpf(BPF_PROG_ATTACH, {
+                                        .target_fd = cg_fd,
+                                        .attach_bpf_fd = prog_fd,
+                                        .attach_type = type,
+                                });
 }
 
 int detachProgram(bpf_attach_type type, uint32_t cg_fd) {
-    bpf_attr attr = {};
-    attr.target_fd = cg_fd;
-    attr.attach_type = type;
-
-    return bpf(BPF_PROG_DETACH, attr);
+    return bpf(BPF_PROG_DETACH, {
+                                        .target_fd = cg_fd,
+                                        .attach_type = type,
+                                });
 }
 
 uint64_t getSocketCookie(int sockFd) {
