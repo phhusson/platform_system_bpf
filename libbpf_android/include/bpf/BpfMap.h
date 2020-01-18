@@ -79,7 +79,7 @@ class BpfMap {
 
     netdutils::StatusOr<Key> getNextKey(const Key& key) const {
         Key nextKey;
-        if (getNextMapKey(mMapFd, const_cast<Key*>(&key), &nextKey)) {
+        if (getNextMapKey(mMapFd, &key, &nextKey)) {
             return netdutils::statusFromErrno(
                 errno, base::StringPrintf("Get next key of map %d failed", mMapFd.get()));
         }
@@ -87,7 +87,7 @@ class BpfMap {
     }
 
     netdutils::Status writeValue(const Key& key, const Value& value, uint64_t flags) {
-        if (writeToMapEntry(mMapFd, const_cast<Key*>(&key), const_cast<Value*>(&value), flags)) {
+        if (writeToMapEntry(mMapFd, &key, &value, flags)) {
             return netdutils::statusFromErrno(
                 errno, base::StringPrintf("write to map %d failed", mMapFd.get()));
         }
@@ -96,7 +96,7 @@ class BpfMap {
 
     netdutils::StatusOr<Value> readValue(const Key key) const {
         Value value;
-        if (findMapEntry(mMapFd, const_cast<Key*>(&key), &value)) {
+        if (findMapEntry(mMapFd, &key, &value)) {
             return netdutils::statusFromErrno(
                 errno, base::StringPrintf("read value of map %d failed", mMapFd.get()));
         }
@@ -104,7 +104,7 @@ class BpfMap {
     }
 
     netdutils::Status deleteValue(const Key& key) {
-        if (deleteMapEntry(mMapFd, const_cast<Key*>(&key))) {
+        if (deleteMapEntry(mMapFd, &key)) {
             return netdutils::statusFromErrno(
                 errno, base::StringPrintf("delete entry from map %d failed", mMapFd.get()));
         }
