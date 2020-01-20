@@ -140,17 +140,18 @@ static inline int mapRetrieve(const char* pathname, uint32_t flag) {
     return bpfFdGet(pathname, flag);
 }
 
-static inline int attachProgram(bpf_attach_type type, uint32_t prog_fd, uint32_t cg_fd) {
+static inline int attachProgram(bpf_attach_type type, const base::unique_fd& prog_fd,
+                                const base::unique_fd& cg_fd) {
     return bpf(BPF_PROG_ATTACH, {
-                                        .target_fd = cg_fd,
-                                        .attach_bpf_fd = prog_fd,
+                                        .target_fd = static_cast<__u32>(cg_fd.get()),
+                                        .attach_bpf_fd = static_cast<__u32>(prog_fd.get()),
                                         .attach_type = type,
                                 });
 }
 
-static inline int detachProgram(bpf_attach_type type, uint32_t cg_fd) {
+static inline int detachProgram(bpf_attach_type type, const base::unique_fd& cg_fd) {
     return bpf(BPF_PROG_DETACH, {
-                                        .target_fd = cg_fd,
+                                        .target_fd = static_cast<__u32>(cg_fd.get()),
                                         .attach_type = type,
                                 });
 }
