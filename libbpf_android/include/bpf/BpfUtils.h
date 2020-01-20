@@ -85,7 +85,7 @@ static inline int createMap(bpf_map_type map_type, uint32_t key_size, uint32_t v
                                });
 }
 
-static inline int writeToMapEntry(const base::unique_fd& map_fd, void* key, void* value,
+static inline int writeToMapEntry(const base::unique_fd& map_fd, const void* key, const void* value,
                                   uint64_t flags) {
     return bpf(BPF_MAP_UPDATE_ELEM, {
                                             .map_fd = static_cast<__u32>(map_fd.get()),
@@ -95,7 +95,7 @@ static inline int writeToMapEntry(const base::unique_fd& map_fd, void* key, void
                                     });
 }
 
-static inline int findMapEntry(const base::unique_fd& map_fd, void* key, void* value) {
+static inline int findMapEntry(const base::unique_fd& map_fd, const void* key, void* value) {
     return bpf(BPF_MAP_LOOKUP_ELEM, {
                                             .map_fd = static_cast<__u32>(map_fd.get()),
                                             .key = ptr_to_u64(key),
@@ -103,14 +103,14 @@ static inline int findMapEntry(const base::unique_fd& map_fd, void* key, void* v
                                     });
 }
 
-static inline int deleteMapEntry(const base::unique_fd& map_fd, void* key) {
+static inline int deleteMapEntry(const base::unique_fd& map_fd, const void* key) {
     return bpf(BPF_MAP_DELETE_ELEM, {
                                             .map_fd = static_cast<__u32>(map_fd.get()),
                                             .key = ptr_to_u64(key),
                                     });
 }
 
-static inline int getNextMapKey(const base::unique_fd& map_fd, void* key, void* next_key) {
+static inline int getNextMapKey(const base::unique_fd& map_fd, const void* key, void* next_key) {
     return bpf(BPF_MAP_GET_NEXT_KEY, {
                                              .map_fd = static_cast<__u32>(map_fd.get()),
                                              .key = ptr_to_u64(key),
