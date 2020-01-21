@@ -26,9 +26,9 @@
 #include <string.h>
 #include <sys/socket.h>
 
+#include <string>
+
 #include "android-base/unique_fd.h"
-#include "netdutils/Slice.h"
-#include "netdutils/StatusOr.h"
 
 #define BPF_PASS 1
 #define BPF_DROP 0
