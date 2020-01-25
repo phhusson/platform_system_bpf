@@ -19,7 +19,6 @@
 
 #include <linux/bpf.h>
 #include <linux/if_ether.h>
-#include <linux/in.h>
 #include <linux/unistd.h>
 #include <net/if.h>
 #include <stdlib.h>
@@ -30,15 +29,7 @@
 
 #include "android-base/unique_fd.h"
 
-#define BPF_PASS 1
-#define BPF_DROP 0
-
 #define ptr_to_u64(x) ((uint64_t)(uintptr_t)(x))
-#define DEFAULT_LOG_LEVEL 1
-
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(*(a)))
-
-#define TEST_LIMIT 8388608
 
 namespace android {
 namespace bpf {
@@ -54,10 +45,6 @@ enum class BpfLevel {
     // map_in_map and cgroup socket filter.
     EXTENDED,
 };
-
-#ifndef DEFAULT_OVERFLOWUID
-#define DEFAULT_OVERFLOWUID 65534
-#endif
 
 constexpr const int OVERFLOW_COUNTERSET = 2;
 
