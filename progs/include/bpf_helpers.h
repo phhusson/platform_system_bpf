@@ -29,43 +29,51 @@
  *
  * This defines the map (hence this should not be used in a header file included
  * from multiple locations) and provides type safe accessors:
- *   ValueType * bpf_foo_map_lookup_elem(KeyType *)
- *   int bpf_foo_map_update_elem(KeyType *, ValueType *, flags)
- *   int bpf_foo_map_delete_elem(KeyType *)
+ *   ValueType * bpf_foo_map_lookup_elem(const KeyType *)
+ *   int bpf_foo_map_update_elem(const KeyType *, const ValueType *, flags)
+ *   int bpf_foo_map_delete_elem(const KeyType *)
  *
  * This will make sure that if you change the type of a map you'll get compile
  * errors at any spots you forget to update with the new type.
+ *
+ * Note: these all take 'const void* map' because from the C/eBPF point of view
+ * the map struct is really just a readonly map definition of the in kernel object.
+ * Runtime modification of the map defining struct is meaningless, since
+ * the contents is only ever used during bpf program loading & map creation
+ * by the bpf loader, and not by the eBPF program itself.
  */
-static void* (*bpf_map_lookup_elem_unsafe)(void* map, void* key) = (void*)BPF_FUNC_map_lookup_elem;
-static int (*bpf_map_update_elem_unsafe)(void* map, void* key, void* value,
+static void* (*bpf_map_lookup_elem_unsafe)(const void* map,
+                                           const void* key) = (void*)BPF_FUNC_map_lookup_elem;
+static int (*bpf_map_update_elem_unsafe)(const void* map, const void* key, const void* value,
                                          unsigned long long flags) = (void*)
         BPF_FUNC_map_update_elem;
-static int (*bpf_map_delete_elem_unsafe)(void* map, void* key) = (void*)BPF_FUNC_map_delete_elem;
+static int (*bpf_map_delete_elem_unsafe)(const void* map,
+                                         const void* key) = (void*)BPF_FUNC_map_delete_elem;
 
 /* type safe macro to declare a map and related accessor functions */
 #define DEFINE_BPF_MAP_NO_ACCESSORS(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries) \
-    struct bpf_map_def SEC("maps") the_map = {                                          \
+    const struct bpf_map_def SEC("maps") the_map = {                                    \
             .type = BPF_MAP_TYPE_##TYPE,                                                \
             .key_size = sizeof(TypeOfKey),                                              \
             .value_size = sizeof(TypeOfValue),                                          \
             .max_entries = (num_entries),                                               \
     };
 
-#define DEFINE_BPF_MAP(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries)                 \
-    DEFINE_BPF_MAP_NO_ACCESSORS(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries)        \
-                                                                                           \
-    static inline __always_inline __unused TypeOfValue* bpf_##the_map##_lookup_elem(       \
-            TypeOfKey* k) {                                                                \
-        return bpf_map_lookup_elem_unsafe(&the_map, k);                                    \
-    };                                                                                     \
-                                                                                           \
-    static inline __always_inline __unused int bpf_##the_map##_update_elem(                \
-            TypeOfKey* k, TypeOfValue* v, unsigned long long flags) {                      \
-        return bpf_map_update_elem_unsafe(&the_map, k, v, flags);                          \
-    };                                                                                     \
-                                                                                           \
-    static inline __always_inline __unused int bpf_##the_map##_delete_elem(TypeOfKey* k) { \
-        return bpf_map_delete_elem_unsafe(&the_map, k);                                    \
+#define DEFINE_BPF_MAP(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries)                       \
+    DEFINE_BPF_MAP_NO_ACCESSORS(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries)              \
+                                                                                                 \
+    static inline __always_inline __unused TypeOfValue* bpf_##the_map##_lookup_elem(             \
+            const TypeOfKey* k) {                                                                \
+        return bpf_map_lookup_elem_unsafe(&the_map, k);                                          \
+    };                                                                                           \
+                                                                                                 \
+    static inline __always_inline __unused int bpf_##the_map##_update_elem(                      \
+            const TypeOfKey* k, const TypeOfValue* v, unsigned long long flags) {                \
+        return bpf_map_update_elem_unsafe(&the_map, k, v, flags);                                \
+    };                                                                                           \
+                                                                                                 \
+    static inline __always_inline __unused int bpf_##the_map##_delete_elem(const TypeOfKey* k) { \
+        return bpf_map_delete_elem_unsafe(&the_map, k);                                          \
     };
 
 static int (*bpf_probe_read)(void* dst, int size, void* unsafe_ptr) = (void*) BPF_FUNC_probe_read;
