@@ -27,6 +27,7 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
+#include "../progs/include/bpf_map_def.h"
 #include "LoaderUtils.h"
 #include "include/libbpf_android.h"
 
@@ -87,17 +88,6 @@ typedef struct {
 
     unique_fd prog_fd; /* fd after loading */
 } codeSection;
-
-/* Common with the eBPF C program */
-struct bpf_map_def {
-    enum bpf_map_type type;
-    unsigned int key_size;
-    unsigned int value_size;
-    unsigned int max_entries;
-    unsigned int map_flags;
-    unsigned int inner_map_idx;
-    unsigned int numa_node;
-};
 
 static int readElfHeader(ifstream& elfFile, Elf64_Ehdr* eh) {
     elfFile.seekg(0);

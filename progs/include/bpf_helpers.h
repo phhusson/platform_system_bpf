@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "bpf_map_def.h"
+
 /* place things in different elf sections */
 #define SEC(NAME) __attribute__((section(NAME), used))
 
@@ -83,23 +85,3 @@ static int (*bpf_trace_printk)(const char* fmt, int fmt_size, ...) = (void*) BPF
 static unsigned long long (*bpf_get_current_pid_tgid)(void) = (void*) BPF_FUNC_get_current_pid_tgid;
 static unsigned long long (*bpf_get_current_uid_gid)(void) = (void*) BPF_FUNC_get_current_uid_gid;
 static unsigned long long (*bpf_get_smp_processor_id)(void) = (void*) BPF_FUNC_get_smp_processor_id;
-
-/*
- * Map structure to be used by Android eBPF C programs. The Android eBPF loader
- * uses this structure from eBPF object to create maps at boot time.
- *
- * The eBPF C program should define structure in the maps section using
- * SEC("maps") otherwise it will be ignored by the eBPF loader.
- *
- * For example:
- * struct bpf_map_def SEC("maps") mymap { .type=... , .key_size=... }
- */
-struct bpf_map_def {
-    unsigned int type;
-    unsigned int key_size;
-    unsigned int value_size;
-    unsigned int max_entries;
-    unsigned int map_flags;
-    unsigned int pad1;
-    unsigned int pad2;
-};
