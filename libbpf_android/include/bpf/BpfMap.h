@@ -46,25 +46,20 @@ template <class Key, class Value>
 class BpfMap {
   public:
     BpfMap<Key, Value>() {};
-    explicit BpfMap<Key, Value>(int fd) : mMapFd(fd){};
 
-    // We could technically implement this constructor either with
-    //   : mMapFd(dup(fd)) {}        // fd valid in caller, we have our own local copy
-    // or
-    //   : mMapFd(fd.release()) {}   // fd no longer valid in caller, we 'stole' it
-    //
-    // However, I think we're much better off with a compile time failure, since
-    // it's better for whoever passes in a unique_fd to think twice about whether
-    // they're trying to pass in ownership or not.
-    explicit BpfMap<Key, Value>(base::unique_fd fd) = delete;
+  protected:
+    // flag must be within BPF_OBJ_FLAG_MASK, ie. 0, BPF_F_RDONLY, BPF_F_WRONLY
+    BpfMap<Key, Value>(const char* pathname, uint32_t flags) {
+        int map_fd = mapRetrieve(pathname, flags);
+        if (map_fd >= 0) mMapFd.reset(map_fd);
+    }
+
+  public:
+    explicit BpfMap<Key, Value>(const char* pathname) : BpfMap<Key, Value>(pathname, 0) {}
 
     BpfMap<Key, Value>(bpf_map_type map_type, uint32_t max_entries, uint32_t map_flags) {
         int map_fd = createMap(map_type, sizeof(Key), sizeof(Value), max_entries, map_flags);
-        if (map_fd < 0) {
-            mMapFd.reset(-1);
-        } else {
-            mMapFd.reset(map_fd);
-        }
+        if (map_fd >= 0) mMapFd.reset(map_fd);
     }
 
     base::Result<Key> getFirstKey() const {
@@ -245,6 +240,13 @@ base::Result<void> BpfMap<Key, Value>::iterateWithValue(
     if (curKey.error().code() == ENOENT) return {};
     return curKey.error();
 }
+
+template <class Key, class Value>
+class BpfMapRO : public BpfMap<Key, Value> {
+  public:
+    explicit BpfMapRO<Key, Value>(const char* pathname)
+        : BpfMap<Key, Value>(pathname, BPF_F_RDONLY) {}
+};
 
 }  // namespace bpf
 }  // namespace android
