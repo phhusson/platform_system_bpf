@@ -140,7 +140,7 @@ TEST_F(BpfMapTest, reset) {
     uint32_t value_write = TEST_VALUE1;
     writeToMapAndCheck(testMap, key, value_write);
 
-    testMap.reset();
+    testMap.reset(-1);
     checkMapInvalid(testMap);
     ASSERT_GT(0, findMapEntry(testMap.getMap(), &key, &value_write));
     ASSERT_EQ(EBADF, errno);
