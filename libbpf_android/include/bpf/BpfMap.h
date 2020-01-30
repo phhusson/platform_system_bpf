@@ -131,12 +131,12 @@ class BpfMap {
     // Move constructor
     void operator=(BpfMap<Key, Value>&& other) noexcept {
         mMapFd = std::move(other.mMapFd);
-        other.reset();
+        other.reset(-1);
     }
 
-    void reset(int fd = -1) {
-        mMapFd.reset(fd);
-    }
+    void reset(base::unique_fd fd) = delete;
+
+    void reset(int fd) { mMapFd.reset(fd); }
 
     bool isValid() const { return mMapFd != -1; }
 
@@ -172,7 +172,6 @@ template <class Key, class Value>
 base::Result<void> BpfMap<Key, Value>::init(const char* path) {
     mMapFd = base::unique_fd(mapRetrieve(path, 0));
     if (mMapFd == -1) {
-        reset();
         return base::ErrnoErrorf("Pinned map not accessible or does not exist: ({})", path);
     }
     return {};
