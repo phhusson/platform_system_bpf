@@ -53,13 +53,6 @@ class BpfMapTest : public testing::Test {
   protected:
     BpfMapTest() {}
 
-    // SetUp() will always populate this with a map, but only some tests will use it.
-    // They may use it once via 'mMapFd.release()', or multiple times via 'dup(mMapFd)'
-    // to initialize a BpfMap object.
-    // If it's not used or only dup'ed then TearDown() will close() it, otherwise
-    // whoever got ownership via mMapFd.release() will close() it - possibly much earlier.
-    unique_fd mMapFd;
-
     void SetUp() {
         SKIP_IF_BPF_NOT_SUPPORTED;
 
@@ -67,9 +60,6 @@ class BpfMapTest : public testing::Test {
         if (!access(PINNED_MAP_PATH, R_OK)) {
             EXPECT_EQ(0, remove(PINNED_MAP_PATH));
         }
-        mMapFd.reset(createMap(BPF_MAP_TYPE_HASH, sizeof(uint32_t), sizeof(uint32_t), TEST_MAP_SIZE,
-                               BPF_F_NO_PREALLOC));
-        ASSERT_LE(0, mMapFd);
     }
 
     void TearDown() {
@@ -78,8 +68,6 @@ class BpfMapTest : public testing::Test {
         if (!access(PINNED_MAP_PATH, R_OK)) {
             EXPECT_EQ(0, remove(PINNED_MAP_PATH));
         }
-
-        mMapFd.reset(-1);  // close(mMapFd) if still open
     }
 
     void checkMapInvalid(BpfMap<uint32_t, uint32_t>& map) {
@@ -124,17 +112,14 @@ TEST_F(BpfMapTest, constructor) {
     BpfMap<uint32_t, uint32_t> testMap1;
     checkMapInvalid(testMap1);
 
-    BpfMap<uint32_t, uint32_t> testMap2(mMapFd.release());
+    BpfMap<uint32_t, uint32_t> testMap2(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     checkMapValid(testMap2);
-
-    BpfMap<uint32_t, uint32_t> testMap3(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
-    checkMapValid(testMap3);
 }
 
 TEST_F(BpfMapTest, basicHelpers) {
     SKIP_IF_BPF_NOT_SUPPORTED;
 
-    BpfMap<uint32_t, uint32_t> testMap(mMapFd.release());
+    BpfMap<uint32_t, uint32_t> testMap(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     uint32_t key = TEST_KEY1;
     uint32_t value_write = TEST_VALUE1;
     writeToMapAndCheck(testMap, key, value_write);
@@ -150,8 +135,7 @@ TEST_F(BpfMapTest, basicHelpers) {
 TEST_F(BpfMapTest, reset) {
     SKIP_IF_BPF_NOT_SUPPORTED;
 
-    BpfMap<uint32_t, uint32_t> testMap;
-    testMap.reset(mMapFd.release());
+    BpfMap<uint32_t, uint32_t> testMap(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     uint32_t key = TEST_KEY1;
     uint32_t value_write = TEST_VALUE1;
     writeToMapAndCheck(testMap, key, value_write);
@@ -165,7 +149,7 @@ TEST_F(BpfMapTest, reset) {
 TEST_F(BpfMapTest, moveConstructor) {
     SKIP_IF_BPF_NOT_SUPPORTED;
 
-    BpfMap<uint32_t, uint32_t> testMap1(mMapFd.release());
+    BpfMap<uint32_t, uint32_t> testMap1(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     BpfMap<uint32_t, uint32_t> testMap2;
     testMap2 = std::move(testMap1);
     uint32_t key = TEST_KEY1;
@@ -195,7 +179,7 @@ TEST_F(BpfMapTest, SetUpMap) {
 TEST_F(BpfMapTest, iterate) {
     SKIP_IF_BPF_NOT_SUPPORTED;
 
-    BpfMap<uint32_t, uint32_t> testMap(mMapFd.release());
+    BpfMap<uint32_t, uint32_t> testMap(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     populateMap(TEST_MAP_SIZE, testMap);
     int totalCount = 0;
     int totalSum = 0;
@@ -215,7 +199,7 @@ TEST_F(BpfMapTest, iterate) {
 TEST_F(BpfMapTest, iterateWithValue) {
     SKIP_IF_BPF_NOT_SUPPORTED;
 
-    BpfMap<uint32_t, uint32_t> testMap(mMapFd.release());
+    BpfMap<uint32_t, uint32_t> testMap(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     populateMap(TEST_MAP_SIZE, testMap);
     int totalCount = 0;
     int totalSum = 0;
@@ -237,7 +221,7 @@ TEST_F(BpfMapTest, iterateWithValue) {
 TEST_F(BpfMapTest, mapIsEmpty) {
     SKIP_IF_BPF_NOT_SUPPORTED;
 
-    BpfMap<uint32_t, uint32_t> testMap(mMapFd.release());
+    BpfMap<uint32_t, uint32_t> testMap(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     expectMapEmpty(testMap);
     uint32_t key = TEST_KEY1;
     uint32_t value_write = TEST_VALUE1;
@@ -269,7 +253,7 @@ TEST_F(BpfMapTest, mapIsEmpty) {
 TEST_F(BpfMapTest, mapClear) {
     SKIP_IF_BPF_NOT_SUPPORTED;
 
-    BpfMap<uint32_t, uint32_t> testMap(mMapFd.release());
+    BpfMap<uint32_t, uint32_t> testMap(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     populateMap(TEST_MAP_SIZE, testMap);
     Result<bool> isEmpty = testMap.isEmpty();
     ASSERT_TRUE(isEmpty);
