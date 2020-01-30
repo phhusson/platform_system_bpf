@@ -35,7 +35,7 @@ namespace bpf {
 class BpfLoadTest : public testing::Test {
   protected:
     BpfLoadTest() {}
-    int mProgFd, mMapFd;
+    int mProgFd;
 
     void SetUp() {
         SKIP_IF_BPF_NOT_SUPPORTED;
@@ -48,9 +48,6 @@ class BpfLoadTest : public testing::Test {
         mProgFd = bpf_obj_get(tp_prog_path);
         EXPECT_GT(mProgFd, 0);
 
-        mMapFd = bpf_obj_get(tp_map_path);
-        EXPECT_GT(mMapFd, 0);
-
         int ret = bpf_attach_tracepoint(mProgFd, "sched", "sched_switch");
         EXPECT_NE(ret, 0);
     }
@@ -59,7 +56,6 @@ class BpfLoadTest : public testing::Test {
         SKIP_IF_BPF_NOT_SUPPORTED;
 
         close(mProgFd);
-        close(mMapFd);
         unlink(tp_prog_path);
         unlink(tp_map_path);
     }
@@ -67,7 +63,7 @@ class BpfLoadTest : public testing::Test {
     void checkMapNonZero() {
         // The test program installs a tracepoint on sched:sched_switch
         // and expects the kernel to populate a PID corresponding to CPU
-        android::bpf::BpfMap<uint32_t, uint32_t> m(mMapFd);
+        android::bpf::BpfMap<uint32_t, uint32_t> m(tp_map_path);
 
         // Wait for program to run a little
         sleep(1);
