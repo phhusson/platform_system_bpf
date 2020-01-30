@@ -31,3 +31,11 @@ service bpfloader /system/bin/bpfloader
     #
     rlimit memlock 1073741824 1073741824
     oneshot
+
+# Need to make sure this runs *before* the bpfloader.
+on early-init
+    # Enable the eBPF JIT -- but do note that it is likely already force enabled
+    # by the kernel config option BPF_JIT_ALWAYS_ON
+    write /proc/sys/net/core/bpf_jit_enable 1
+    # Enable JIT kallsyms export for privileged users only
+    write /proc/sys/net/core/bpf_jit_kallsyms 1
