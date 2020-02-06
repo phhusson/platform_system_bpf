@@ -65,7 +65,7 @@ class BpfMap {
     base::Result<Key> getFirstKey() const {
         Key firstKey;
         if (getFirstMapKey(mMapFd, &firstKey)) {
-            return base::ErrnoErrorf("Get firstKey map {} failed", mMapFd.get());
+            return ErrnoErrorf("Get firstKey map {} failed", mMapFd.get());
         }
         return firstKey;
     }
@@ -73,14 +73,14 @@ class BpfMap {
     base::Result<Key> getNextKey(const Key& key) const {
         Key nextKey;
         if (getNextMapKey(mMapFd, &key, &nextKey)) {
-            return base::ErrnoErrorf("Get next key of map {} failed", mMapFd.get());
+            return ErrnoErrorf("Get next key of map {} failed", mMapFd.get());
         }
         return nextKey;
     }
 
     base::Result<void> writeValue(const Key& key, const Value& value, uint64_t flags) {
         if (writeToMapEntry(mMapFd, &key, &value, flags)) {
-            return base::ErrnoErrorf("Write to map {} failed", mMapFd.get());
+            return ErrnoErrorf("Write to map {} failed", mMapFd.get());
         }
         return {};
     }
@@ -88,14 +88,14 @@ class BpfMap {
     base::Result<Value> readValue(const Key key) const {
         Value value;
         if (findMapEntry(mMapFd, &key, &value)) {
-            return base::ErrnoErrorf("Read value of map {} failed", mMapFd.get());
+            return ErrnoErrorf("Read value of map {} failed", mMapFd.get());
         }
         return value;
     }
 
     base::Result<void> deleteValue(const Key& key) {
         if (deleteMapEntry(mMapFd, &key)) {
-            return base::ErrnoErrorf("Delete entry from map {} failed", mMapFd.get());
+            return ErrnoErrorf("Delete entry from map {} failed", mMapFd.get());
         }
         return {};
     }
@@ -172,7 +172,7 @@ template <class Key, class Value>
 base::Result<void> BpfMap<Key, Value>::init(const char* path) {
     mMapFd = base::unique_fd(mapRetrieve(path, 0));
     if (mMapFd == -1) {
-        return base::ErrnoErrorf("Pinned map not accessible or does not exist: ({})", path);
+        return ErrnoErrorf("Pinned map not accessible or does not exist: ({})", path);
     }
     return {};
 }
