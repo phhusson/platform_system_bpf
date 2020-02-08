@@ -47,6 +47,7 @@ cc_binary {
     required: [
         "clatd.o",
         "netd.o",
+        "offload.o",
     ],
 
 }
