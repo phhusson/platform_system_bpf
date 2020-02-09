@@ -81,27 +81,27 @@ class BpfMapTest : public testing::Test {
     }
 
     void writeToMapAndCheck(BpfMap<uint32_t, uint32_t>& map, uint32_t key, uint32_t value) {
-        ASSERT_TRUE(map.writeValue(key, value, BPF_ANY));
+        ASSERT_RESULT_OK(map.writeValue(key, value, BPF_ANY));
         uint32_t value_read;
         ASSERT_EQ(0, findMapEntry(map.getMap(), &key, &value_read));
         checkValueAndStatus(value, value_read);
     }
 
     void checkValueAndStatus(uint32_t refValue, Result<uint32_t> value) {
-        ASSERT_TRUE(value);
+        ASSERT_RESULT_OK(value);
         ASSERT_EQ(refValue, value.value());
     }
 
     void populateMap(uint32_t total, BpfMap<uint32_t, uint32_t>& map) {
         for (uint32_t key = 0; key < total; key++) {
             uint32_t value = key * 10;
-            EXPECT_TRUE(map.writeValue(key, value, BPF_ANY));
+            EXPECT_RESULT_OK(map.writeValue(key, value, BPF_ANY));
         }
     }
 
     void expectMapEmpty(BpfMap<uint32_t, uint32_t>& map) {
         Result<bool> isEmpty = map.isEmpty();
-        ASSERT_TRUE(isEmpty);
+        ASSERT_RESULT_OK(isEmpty);
         ASSERT_TRUE(isEmpty.value());
     }
 };
@@ -127,7 +127,7 @@ TEST_F(BpfMapTest, basicHelpers) {
     checkValueAndStatus(value_write, value_read);
     Result<uint32_t> key_read = testMap.getFirstKey();
     checkValueAndStatus(key, key_read);
-    ASSERT_TRUE(testMap.deleteValue(key));
+    ASSERT_RESULT_OK(testMap.deleteValue(key));
     ASSERT_GT(0, findMapEntry(testMap.getMap(), &key, &value_read));
     ASSERT_EQ(ENOENT, errno);
 }
@@ -167,7 +167,7 @@ TEST_F(BpfMapTest, SetUpMap) {
     EXPECT_EQ(0, access(PINNED_MAP_PATH, R_OK));
     checkMapValid(testMap1);
     BpfMap<uint32_t, uint32_t> testMap2;
-    EXPECT_TRUE(testMap2.init(PINNED_MAP_PATH));
+    EXPECT_RESULT_OK(testMap2.init(PINNED_MAP_PATH));
     checkMapValid(testMap2);
     uint32_t key = TEST_KEY1;
     uint32_t value = TEST_VALUE1;
@@ -190,7 +190,7 @@ TEST_F(BpfMapTest, iterate) {
         totalSum += key;
         return map.deleteValue(key);
     };
-    EXPECT_TRUE(testMap.iterate(iterateWithDeletion));
+    EXPECT_RESULT_OK(testMap.iterate(iterateWithDeletion));
     EXPECT_EQ((int)TEST_MAP_SIZE, totalCount);
     EXPECT_EQ(((1 + TEST_MAP_SIZE - 1) * (TEST_MAP_SIZE - 1)) / 2, (uint32_t)totalSum);
     expectMapEmpty(testMap);
@@ -212,7 +212,7 @@ TEST_F(BpfMapTest, iterateWithValue) {
         totalSum += value;
         return map.deleteValue(key);
     };
-    EXPECT_TRUE(testMap.iterateWithValue(iterateWithDeletion));
+    EXPECT_RESULT_OK(testMap.iterateWithValue(iterateWithDeletion));
     EXPECT_EQ((int)TEST_MAP_SIZE, totalCount);
     EXPECT_EQ(((1 + TEST_MAP_SIZE - 1) * (TEST_MAP_SIZE - 1)) * 5, (uint32_t)totalSum);
     expectMapEmpty(testMap);
@@ -227,21 +227,21 @@ TEST_F(BpfMapTest, mapIsEmpty) {
     uint32_t value_write = TEST_VALUE1;
     writeToMapAndCheck(testMap, key, value_write);
     Result<bool> isEmpty = testMap.isEmpty();
-    ASSERT_TRUE(isEmpty);
+    ASSERT_RESULT_OK(isEmpty);
     ASSERT_FALSE(isEmpty.value());
-    ASSERT_TRUE(testMap.deleteValue(key));
+    ASSERT_RESULT_OK(testMap.deleteValue(key));
     ASSERT_GT(0, findMapEntry(testMap.getMap(), &key, &value_write));
     ASSERT_EQ(ENOENT, errno);
     expectMapEmpty(testMap);
     int entriesSeen = 0;
-    EXPECT_TRUE(testMap.iterate(
+    EXPECT_RESULT_OK(testMap.iterate(
             [&entriesSeen](const unsigned int&,
                            const BpfMap<unsigned int, unsigned int>&) -> Result<void> {
                 entriesSeen++;
                 return {};
             }));
     EXPECT_EQ(0, entriesSeen);
-    EXPECT_TRUE(testMap.iterateWithValue(
+    EXPECT_RESULT_OK(testMap.iterateWithValue(
             [&entriesSeen](const unsigned int&, const unsigned int&,
                            const BpfMap<unsigned int, unsigned int>&) -> Result<void> {
                 entriesSeen++;
@@ -256,9 +256,9 @@ TEST_F(BpfMapTest, mapClear) {
     BpfMap<uint32_t, uint32_t> testMap(BPF_MAP_TYPE_HASH, TEST_MAP_SIZE, BPF_F_NO_PREALLOC);
     populateMap(TEST_MAP_SIZE, testMap);
     Result<bool> isEmpty = testMap.isEmpty();
-    ASSERT_TRUE(isEmpty);
+    ASSERT_RESULT_OK(isEmpty);
     ASSERT_FALSE(*isEmpty);
-    ASSERT_TRUE(testMap.clear());
+    ASSERT_RESULT_OK(testMap.clear());
     expectMapEmpty(testMap);
 }
 
