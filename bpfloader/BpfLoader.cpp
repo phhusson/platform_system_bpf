@@ -72,7 +72,7 @@ void loadAllElfObjects(void) {
 }
 
 int main() {
-    if (android::bpf::getBpfSupportLevel() != android::bpf::BpfLevel::NONE) {
+    if (android::bpf::isBpfSupported()) {
         // Load all ELF objects, create programs and maps, and pin them
         loadAllElfObjects();
     }
