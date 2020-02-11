@@ -136,14 +136,7 @@ static BpfLevel getUncachedBpfSupportLevel() {
 }
 
 BpfLevel getBpfSupportLevel() {
-    static bool initialized = false;
-    static BpfLevel cache;
-
-    if (!initialized) {
-        initialized = true;
-        cache = getUncachedBpfSupportLevel();
-    }
-
+    static BpfLevel cache = getUncachedBpfSupportLevel();
     return cache;
 }
 
