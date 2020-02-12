@@ -520,8 +520,13 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
             ALOGD("bpf_prog_load lib call for %s (%s) returned fd: %d (%s)\n", elfPath,
                   cs[i].name.c_str(), fd, (fd < 0 ? std::strerror(errno) : "no error"));
 
-            if (fd <= 0)
-                ALOGE("bpf_prog_load: log_buf contents: %s\n", (char *)log_buf.data());
+            if (fd < 0) {
+                std::vector<std::string> lines = android::base::Split(log_buf.data(), "\n");
+
+                ALOGE("bpf_prog_load - BEGIN log_buf contents:");
+                for (const auto& line : lines) ALOGE("%s", line.c_str());
+                ALOGE("bpf_prog_load - END log_buf contents.");
+            }
         }
 
         if (fd < 0) return fd;
