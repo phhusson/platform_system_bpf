@@ -144,22 +144,26 @@ static inline int detachProgram(bpf_attach_type type, const base::unique_fd& cg_
 }
 
 uint64_t getSocketCookie(int sockFd);
+int synchronizeKernelRCU();
 int setrlimitForTest();
 std::string BpfLevelToString(BpfLevel BpfLevel);
 BpfLevel getBpfSupportLevel();
-int synchronizeKernelRCU();
+
+static inline bool isBpfSupported() {
+    return getBpfSupportLevel() != BpfLevel::NONE;
+}
 
 #define SKIP_IF_BPF_NOT_SUPPORTED                                                    \
     do {                                                                             \
-        if (android::bpf::getBpfSupportLevel() == android::bpf::BpfLevel::NONE) {    \
+        if (!android::bpf::isBpfSupported()) {                                       \
             GTEST_LOG_(INFO) << "This test is skipped since bpf is not available\n"; \
             return;                                                                  \
         }                                                                            \
     } while (0)
 
-#define SKIP_IF_BPF_SUPPORTED                                                           \
-    do {                                                                                \
-        if (android::bpf::getBpfSupportLevel() != android::bpf::BpfLevel::NONE) return; \
+#define SKIP_IF_BPF_SUPPORTED                       \
+    do {                                            \
+        if (android::bpf::isBpfSupported()) return; \
     } while (0)
 
 }  // namespace bpf
