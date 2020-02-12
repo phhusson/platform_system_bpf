@@ -166,6 +166,15 @@ inline bool isBpfSupported() {
         if (android::bpf::isBpfSupported()) return; \
     } while (0)
 
+#define SKIP_IF_EXTENDED_BPF_NOT_SUPPORTED                                           \
+    do {                                                                             \
+        if (android::bpf::getBpfSupportLevel() < android::bpf::BpfLevel::EXTENDED) { \
+            GTEST_LOG_(INFO) << "This test is skipped since extended bpf feature"    \
+                             << "not supported\n";                                   \
+            return;                                                                  \
+        }                                                                            \
+    } while (0)
+
 }  // namespace bpf
 }  // namespace android
 
