@@ -94,3 +94,11 @@ static int (*bpf_trace_printk)(const char* fmt, int fmt_size, ...) = (void*) BPF
 static unsigned long long (*bpf_get_current_pid_tgid)(void) = (void*) BPF_FUNC_get_current_pid_tgid;
 static unsigned long long (*bpf_get_current_uid_gid)(void) = (void*) BPF_FUNC_get_current_uid_gid;
 static unsigned long long (*bpf_get_smp_processor_id)(void) = (void*) BPF_FUNC_get_smp_processor_id;
+
+#define DEFINE_BPF_PROG(SECTION_NAME, prog_uid, prog_gid, the_prog) \
+    const struct bpf_prog_def SEC("progs") the_prog##_def = {       \
+            .uid = (prog_uid),                                      \
+            .gid = (prog_gid),                                      \
+    };                                                              \
+    SEC(SECTION_NAME)                                               \
+    int the_prog
