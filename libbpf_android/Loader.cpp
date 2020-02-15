@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 
@@ -411,7 +412,11 @@ static int createMaps(const char* elfPath, ifstream& elfFile, vector<unique_fd>&
 
         if (!reuse) {
             ret = bpf_obj_pin(fd, mapPinLoc.c_str());
-            if (ret < 0) return ret;
+            if (ret) return -errno;
+            ret = chown(mapPinLoc.c_str(), (uid_t)md[i].uid, (gid_t)md[i].gid);
+            if (ret) return -errno;
+            ret = chmod(mapPinLoc.c_str(), md[i].mode);
+            if (ret) return -errno;
         }
 
         mapFds.push_back(std::move(fd));
