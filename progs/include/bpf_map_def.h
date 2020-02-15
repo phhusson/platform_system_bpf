@@ -62,4 +62,8 @@ struct bpf_map_def {
     // The following are not supported by the Android bpfloader:
     //   unsigned int inner_map_idx;
     //   unsigned int numa_node;
+
+    unsigned int uid;   // uid_t
+    unsigned int gid;   // gid_t
+    unsigned int mode;  // mode_t
 };
