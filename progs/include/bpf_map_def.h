@@ -67,3 +67,8 @@ struct bpf_map_def {
     unsigned int gid;   // gid_t
     unsigned int mode;  // mode_t
 };
+
+struct bpf_prog_def {
+    unsigned int uid;
+    unsigned int gid;
+};
