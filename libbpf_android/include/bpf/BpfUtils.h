@@ -40,10 +40,12 @@ enum class BpfLevel {
     NONE,
     // Devices shipped in P with android 4.9 kernel only have the basic eBPF
     // functionalities such as xt_bpf and cgroup skb filter.
-    BASIC,
+    BASIC_4_9,
     // For devices that have 4.14 kernel. It supports advanced features like
     // map_in_map and cgroup socket filter.
-    EXTENDED,
+    EXTENDED_4_14,
+    EXTENDED_4_19,
+    EXTENDED_5_4,
 };
 
 constexpr const int OVERFLOW_COUNTERSET = 2;
@@ -166,13 +168,13 @@ inline bool isBpfSupported() {
         if (android::bpf::isBpfSupported()) return; \
     } while (0)
 
-#define SKIP_IF_EXTENDED_BPF_NOT_SUPPORTED                                           \
-    do {                                                                             \
-        if (android::bpf::getBpfSupportLevel() < android::bpf::BpfLevel::EXTENDED) { \
-            GTEST_LOG_(INFO) << "This test is skipped since extended bpf feature"    \
-                             << "not supported\n";                                   \
-            return;                                                                  \
-        }                                                                            \
+#define SKIP_IF_EXTENDED_BPF_NOT_SUPPORTED                                                \
+    do {                                                                                  \
+        if (android::bpf::getBpfSupportLevel() < android::bpf::BpfLevel::EXTENDED_4_14) { \
+            GTEST_LOG_(INFO) << "This test is skipped since extended bpf feature"         \
+                             << "not supported\n";                                        \
+            return;                                                                       \
+        }                                                                                 \
     } while (0)
 
 }  // namespace bpf
