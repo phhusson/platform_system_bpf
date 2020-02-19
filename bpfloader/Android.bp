@@ -48,6 +48,7 @@ cc_binary {
         "clatd.o",
         "netd.o",
         "offload.o",
+        "time_in_state.o"
     ],
 
 }
