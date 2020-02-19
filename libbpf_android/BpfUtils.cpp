@@ -96,6 +96,24 @@ int setrlimitForTest() {
     return res;
 }
 
+#define KVER(a, b, c) ((a)*65536 + (b)*256 + (c))
+
+unsigned kernelVersion() {
+    struct utsname buf;
+    int ret = uname(&buf);
+    if (ret) return 0;
+
+    unsigned kver_major;
+    unsigned kver_minor;
+    unsigned kver_sub;
+    char dummy;
+    ret = sscanf(buf.release, "%u.%u.%u%c", &kver_major, &kver_minor, &kver_sub, &dummy);
+    // Check the device kernel version
+    if (ret < 3) return 0;
+
+    return KVER(kver_major, kver_minor, kver_sub);
+}
+
 std::string BpfLevelToString(BpfLevel bpfLevel) {
     switch (bpfLevel) {
         case BpfLevel::NONE:
@@ -123,23 +141,12 @@ static BpfLevel getUncachedBpfSupportLevel() {
     // Check if the device is shipped originally with android P.
     if (api_level < MINIMUM_API_REQUIRED) return BpfLevel::NONE;
 
-    struct utsname buf;
-    int ret = uname(&buf);
-    if (ret) return BpfLevel::NONE;
+    unsigned kver = kernelVersion();
 
-    int kernel_version_major;
-    int kernel_version_minor;
-    char dummy;
-    ret = sscanf(buf.release, "%d.%d%c", &kernel_version_major, &kernel_version_minor, &dummy);
-    // Check the device kernel version
-    if (ret < 2) return BpfLevel::NONE;
-
-    if (kernel_version_major > 5) return BpfLevel::EXTENDED_5_4;
-    if (kernel_version_major == 5 && kernel_version_minor >= 4) return BpfLevel::EXTENDED_5_4;
-    if (kernel_version_major == 5) return BpfLevel::EXTENDED_4_19;
-    if (kernel_version_major == 4 && kernel_version_minor >= 19) return BpfLevel::EXTENDED_4_19;
-    if (kernel_version_major == 4 && kernel_version_minor >= 14) return BpfLevel::EXTENDED_4_14;
-    if (kernel_version_major == 4 && kernel_version_minor >= 9) return BpfLevel::BASIC_4_9;
+    if (kver >= KVER(5, 4, 0)) return BpfLevel::EXTENDED_5_4;
+    if (kver >= KVER(4, 19, 0)) return BpfLevel::EXTENDED_4_19;
+    if (kver >= KVER(4, 14, 0)) return BpfLevel::EXTENDED_4_14;
+    if (kver >= KVER(4, 9, 0)) return BpfLevel::BASIC_4_9;
 
     return BpfLevel::NONE;
 }

@@ -148,6 +148,7 @@ inline int detachProgram(bpf_attach_type type, const base::unique_fd& cg_fd) {
 uint64_t getSocketCookie(int sockFd);
 int synchronizeKernelRCU();
 int setrlimitForTest();
+unsigned kernelVersion();
 std::string BpfLevelToString(BpfLevel BpfLevel);
 BpfLevel getBpfSupportLevel();
 
