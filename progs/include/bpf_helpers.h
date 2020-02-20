@@ -98,10 +98,25 @@ static unsigned long long (*bpf_get_current_pid_tgid)(void) = (void*) BPF_FUNC_g
 static unsigned long long (*bpf_get_current_uid_gid)(void) = (void*) BPF_FUNC_get_current_uid_gid;
 static unsigned long long (*bpf_get_smp_processor_id)(void) = (void*) BPF_FUNC_get_smp_processor_id;
 
-#define DEFINE_BPF_PROG(SECTION_NAME, prog_uid, prog_gid, the_prog) \
-    const struct bpf_prog_def SEC("progs") the_prog##_def = {       \
-            .uid = (prog_uid),                                      \
-            .gid = (prog_gid),                                      \
-    };                                                              \
-    SEC(SECTION_NAME)                                               \
+#define KVER_NONE 0
+#define KVER(a, b, c) ((a)*65536 + (b)*256 + (c))
+#define KVER_INF 0xFFFFFFFF
+
+// programs requiring a kernel version >= min_kv && < max_kv
+#define DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, max_kv) \
+    const struct bpf_prog_def SEC("progs") the_prog##_def = {                                  \
+            .uid = (prog_uid),                                                                 \
+            .gid = (prog_gid),                                                                 \
+            .min_kver = (min_kv),                                                              \
+            .max_kver = (max_kv),                                                              \
+    };                                                                                         \
+    SEC(SECTION_NAME)                                                                          \
     int the_prog
+
+// programs requiring a kernel version >= min_kv
+#define DEFINE_BPF_PROG_KVER(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv) \
+    DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, KVER_INF)
+
+// programs with no kernel version requirements
+#define DEFINE_BPF_PROG(SECTION_NAME, prog_uid, prog_gid, the_prog) \
+    DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, 0, KVER_INF)
