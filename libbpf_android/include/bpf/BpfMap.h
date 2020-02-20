@@ -140,22 +140,25 @@ class BpfMap {
 
     bool isValid() const { return mMapFd != -1; }
 
-    // It is only safe to call this method if it is guaranteed that nothing will concurrently
-    // iterate over the map in any process.
     base::Result<void> clear() {
-        const auto deleteAllEntries = [](const Key& key,
-                                         BpfMap<Key, Value>& map) -> base::Result<void> {
-            base::Result<void> res = map.deleteValue(key);
-            if (!res.ok() && res.error().code() != ENOENT) {
-                ALOGE("Failed to delete data %s", strerror(res.error().code()));
+        while (true) {
+            auto key = getFirstKey();
+            if (!key.ok()) {
+                if (key.error().code() == ENOENT) return {};  // empty: success
+                return key.error();                           // Anything else is an error
             }
-            return {};
-        };
-        return iterate(deleteAllEntries);
+            auto res = deleteValue(key.value());
+            if (!res.ok()) {
+                // Someone else could have deleted the key, so ignore ENOENT
+                if (res.error().code() == ENOENT) continue;
+                ALOGE("Failed to delete data %s", strerror(res.error().code()));
+                return res.error();
+            }
+        }
     }
 
     base::Result<bool> isEmpty() const {
-        auto key = this->getFirstKey();
+        auto key = getFirstKey();
         if (!key.ok()) {
             // Return error code ENOENT means the map is empty
             if (key.error().code() == ENOENT) return true;
@@ -199,7 +202,7 @@ base::Result<void> BpfMap<Key, Value>::iterateWithValue(
     base::Result<Key> curKey = getFirstKey();
     while (curKey.ok()) {
         const base::Result<Key>& nextKey = getNextKey(curKey.value());
-        base::Result<Value> curValue = this->readValue(curKey.value());
+        base::Result<Value> curValue = readValue(curKey.value());
         if (!curValue.ok()) return curValue.error();
         base::Result<void> status = filter(curKey.value(), curValue.value(), *this);
         if (!status.ok()) return status;
@@ -230,7 +233,7 @@ base::Result<void> BpfMap<Key, Value>::iterateWithValue(
     base::Result<Key> curKey = getFirstKey();
     while (curKey.ok()) {
         const base::Result<Key>& nextKey = getNextKey(curKey.value());
-        base::Result<Value> curValue = this->readValue(curKey.value());
+        base::Result<Value> curValue = readValue(curKey.value());
         if (!curValue.ok()) return curValue.error();
         base::Result<void> status = filter(curKey.value(), curValue.value(), *this);
         if (!status.ok()) return status;
