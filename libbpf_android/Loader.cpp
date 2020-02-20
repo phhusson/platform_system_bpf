@@ -30,6 +30,7 @@
 
 #include "../progs/include/bpf_map_def.h"
 #include "LoaderUtils.h"
+#include "bpf/BpfUtils.h"
 #include "include/libbpf_android.h"
 
 #include <cstdlib>
@@ -531,15 +532,21 @@ static void applyMapRelo(ifstream& elfFile, vector<unique_fd> &mapFds, vector<co
 }
 
 static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const string& license) {
-    int ret, fd, kvers;
+    unsigned kvers = kernelVersion();
+    int ret, fd;
 
-    if ((kvers = getMachineKvers()) < 0) return -1;
+    if (!kvers) return -1;
 
     string fname = pathToFilename(string(elfPath), true);
 
     for (int i = 0; i < (int)cs.size(); i++) {
         string progPinLoc;
         bool reuse = false;
+
+        if (cs[i].prog_def.has_value()) {
+            if (kvers < cs[i].prog_def->min_kver) continue;
+            if (kvers >= cs[i].prog_def->max_kver) continue;
+        }
 
         // Format of pin location is
         // /sys/fs/bpf/prog_<filename>_<mapname>
