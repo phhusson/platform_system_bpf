@@ -80,7 +80,7 @@ class BpfLoadTest : public testing::Test {
             return base::Result<void>();
         };
 
-        EXPECT_TRUE(m.iterateWithValue(iterFunc));
+        EXPECT_RESULT_OK(m.iterateWithValue(iterFunc));
         EXPECT_EQ(non_zero, 1);
     }
 };

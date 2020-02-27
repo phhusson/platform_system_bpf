@@ -24,16 +24,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 
 #include "../progs/include/bpf_map_def.h"
 #include "LoaderUtils.h"
+#include "bpf/BpfUtils.h"
 #include "include/libbpf_android.h"
 
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -50,6 +53,7 @@ using android::base::StartsWith;
 using android::base::unique_fd;
 using std::ifstream;
 using std::ios;
+using std::optional;
 using std::string;
 using std::vector;
 
@@ -85,6 +89,7 @@ typedef struct {
     string name;
     vector<char> data;
     vector<char> rel_data;
+    optional<struct bpf_prog_def> prog_def;
 
     unique_fd prog_fd; /* fd after loading */
 } codeSection;
@@ -271,6 +276,59 @@ static bool isRelSection(codeSection& cs, string& name) {
     return false;
 }
 
+static int readProgDefs(ifstream& elfFile, vector<struct bpf_prog_def>& pd) {
+    vector<char> pdData;
+    int ret = readSectionByName("progs", elfFile, pdData);
+    if (ret == -2) return 0;
+    if (ret) return ret;
+
+    pd.resize(pdData.size() / sizeof(struct bpf_prog_def));
+    memcpy(pd.data(), pdData.data(), pdData.size());
+    return 0;
+}
+
+static int getSectionSymNames(ifstream& elfFile, const string& sectionName, vector<string>& names) {
+    int ret;
+    string name;
+    vector<Elf64_Sym> symtab;
+    vector<Elf64_Shdr> shTable;
+
+    ret = readSymTab(elfFile, 1 /* sort */, symtab);
+    if (ret) return ret;
+
+    /* Get index of section */
+    ret = readSectionHeadersAll(elfFile, shTable);
+    if (ret) return ret;
+
+    int sec_idx = -1;
+    for (int i = 0; i < (int)shTable.size(); i++) {
+        ret = getSymName(elfFile, shTable[i].sh_name, name);
+        if (ret) return ret;
+
+        if (!name.compare(sectionName)) {
+            sec_idx = i;
+            break;
+        }
+    }
+
+    /* No section found with matching name*/
+    if (sec_idx == -1) {
+        ALOGE("No %s section could be found in elf object\n", sectionName.c_str());
+        return -1;
+    }
+
+    for (int i = 0; i < (int)symtab.size(); i++) {
+        if (symtab[i].st_shndx == sec_idx) {
+            string s;
+            ret = getSymName(elfFile, symtab[i].st_name, s);
+            if (ret) return ret;
+            names.push_back(s);
+        }
+    }
+
+    return 0;
+}
+
 /* Read a section by its index - for ex to get sec hdr strtab blob */
 static int readCodeSections(ifstream& elfFile, vector<codeSection>& cs) {
     vector<Elf64_Shdr> shTable;
@@ -279,6 +337,13 @@ static int readCodeSections(ifstream& elfFile, vector<codeSection>& cs) {
     ret = readSectionHeadersAll(elfFile, shTable);
     if (ret) return ret;
     entries = shTable.size();
+
+    vector<struct bpf_prog_def> pd;
+    ret = readProgDefs(elfFile, pd);
+    if (ret) return ret;
+    vector<string> progDefNames;
+    ret = getSectionSymNames(elfFile, "progs", progDefNames);
+    if (!pd.empty() && ret) return ret;
 
     for (int i = 0; i < entries; i++) {
         string name;
@@ -290,6 +355,7 @@ static int readCodeSections(ifstream& elfFile, vector<codeSection>& cs) {
 
         enum bpf_prog_type ptype = getSectionType(name);
         if (ptype != BPF_PROG_TYPE_UNSPEC) {
+            string oldName = name;
             deslash(name);
             cs_temp.type = ptype;
             cs_temp.name = name;
@@ -297,6 +363,16 @@ static int readCodeSections(ifstream& elfFile, vector<codeSection>& cs) {
             ret = readSectionByIdx(elfFile, i, cs_temp.data);
             if (ret) return ret;
             ALOGD("Loaded code section %d (%s)\n", i, name.c_str());
+
+            vector<string> csSymNames;
+            ret = getSectionSymNames(elfFile, oldName, csSymNames);
+            if (ret || !csSymNames.size()) return ret;
+            for (size_t i = 0; i < progDefNames.size(); ++i) {
+                if (!progDefNames[i].compare(csSymNames[0] + "_def")) {
+                    cs_temp.prog_def = pd[i];
+                    break;
+                }
+            }
         }
 
         /* Check for rel section */
@@ -331,48 +407,6 @@ static int getSymNameByIdx(ifstream& elfFile, int index, string& name) {
     return getSymName(elfFile, symtab[index].st_name, name);
 }
 
-static int getMapNames(ifstream& elfFile, vector<string>& names) {
-    int ret;
-    string mapName;
-    vector<Elf64_Sym> symtab;
-    vector<Elf64_Shdr> shTable;
-
-    ret = readSymTab(elfFile, 1 /* sort */, symtab);
-    if (ret) return ret;
-
-    /* Get index of maps section */
-    ret = readSectionHeadersAll(elfFile, shTable);
-    if (ret) return ret;
-
-    int maps_idx = -1;
-    for (int i = 0; i < (int)shTable.size(); i++) {
-        ret = getSymName(elfFile, shTable[i].sh_name, mapName);
-        if (ret) return ret;
-
-        if (!mapName.compare("maps")) {
-            maps_idx = i;
-            break;
-        }
-    }
-
-    /* No maps found */
-    if (maps_idx == -1) {
-        ALOGE("No maps could be found in elf object\n");
-        return -1;
-    }
-
-    for (int i = 0; i < (int)symtab.size(); i++) {
-        if (symtab[i].st_shndx == maps_idx) {
-            string s;
-            ret = getSymName(elfFile, symtab[i].st_name, s);
-            if (ret) return ret;
-            names.push_back(s);
-        }
-    }
-
-    return 0;
-}
-
 static int createMaps(const char* elfPath, ifstream& elfFile, vector<unique_fd>& mapFds) {
     int ret;
     vector<char> mdData;
@@ -386,7 +420,7 @@ static int createMaps(const char* elfPath, ifstream& elfFile, vector<unique_fd>&
     md.resize(mdData.size() / sizeof(struct bpf_map_def));
     memcpy(md.data(), mdData.data(), mdData.size());
 
-    ret = getMapNames(elfFile, mapNames);
+    ret = getSectionSymNames(elfFile, "maps", mapNames);
     if (ret) return ret;
 
     for (int i = 0; i < (int)mapNames.size(); i++) {
@@ -411,7 +445,11 @@ static int createMaps(const char* elfPath, ifstream& elfFile, vector<unique_fd>&
 
         if (!reuse) {
             ret = bpf_obj_pin(fd, mapPinLoc.c_str());
-            if (ret < 0) return ret;
+            if (ret) return -errno;
+            ret = chown(mapPinLoc.c_str(), (uid_t)md[i].uid, (gid_t)md[i].gid);
+            if (ret) return -errno;
+            ret = chmod(mapPinLoc.c_str(), md[i].mode);
+            if (ret) return -errno;
         }
 
         mapFds.push_back(std::move(fd));
@@ -468,7 +506,7 @@ static void applyRelo(void* insnsPtr, Elf64_Addr offset, int fd) {
 static void applyMapRelo(ifstream& elfFile, vector<unique_fd> &mapFds, vector<codeSection>& cs) {
     vector<string> mapNames;
 
-    int ret = getMapNames(elfFile, mapNames);
+    int ret = getSectionSymNames(elfFile, "maps", mapNames);
     if (ret) return;
 
     for (int k = 0; k != (int)cs.size(); k++) {
@@ -494,15 +532,21 @@ static void applyMapRelo(ifstream& elfFile, vector<unique_fd> &mapFds, vector<co
 }
 
 static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const string& license) {
-    int ret, fd, kvers;
+    unsigned kvers = kernelVersion();
+    int ret, fd;
 
-    if ((kvers = getMachineKvers()) < 0) return -1;
+    if (!kvers) return -1;
 
     string fname = pathToFilename(string(elfPath), true);
 
     for (int i = 0; i < (int)cs.size(); i++) {
         string progPinLoc;
         bool reuse = false;
+
+        if (cs[i].prog_def.has_value()) {
+            if (kvers < cs[i].prog_def->min_kver) continue;
+            if (kvers >= cs[i].prog_def->max_kver) continue;
+        }
 
         // Format of pin location is
         // /sys/fs/bpf/prog_<filename>_<mapname>
@@ -520,8 +564,13 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
             ALOGD("bpf_prog_load lib call for %s (%s) returned fd: %d (%s)\n", elfPath,
                   cs[i].name.c_str(), fd, (fd < 0 ? std::strerror(errno) : "no error"));
 
-            if (fd <= 0)
-                ALOGE("bpf_prog_load: log_buf contents: %s\n", (char *)log_buf.data());
+            if (fd < 0) {
+                std::vector<std::string> lines = android::base::Split(log_buf.data(), "\n");
+
+                ALOGE("bpf_prog_load - BEGIN log_buf contents:");
+                for (const auto& line : lines) ALOGE("%s", line.c_str());
+                ALOGE("bpf_prog_load - END log_buf contents.");
+            }
         }
 
         if (fd < 0) return fd;
@@ -529,7 +578,14 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
 
         if (!reuse) {
             ret = bpf_obj_pin(fd, progPinLoc.c_str());
-            if (ret < 0) return ret;
+            if (ret) return -errno;
+            if (cs[i].prog_def.has_value()) {
+                if (chown(progPinLoc.c_str(), (uid_t)cs[i].prog_def->uid,
+                          (gid_t)cs[i].prog_def->gid)) {
+                    return -errno;
+                }
+            }
+            if (chmod(progPinLoc.c_str(), 0440)) return -errno;
         }
 
         cs[i].prog_fd.reset(fd);

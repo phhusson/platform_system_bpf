@@ -1,6 +1,6 @@
 service bpfloader /system/bin/bpfloader
     class main
-    capabilities SYS_ADMIN
+    capabilities CHOWN SYS_ADMIN
     #
     # Set RLIMIT_MEMLOCK to 1GiB for bpfloader
     #

@@ -53,16 +53,16 @@ static int (*bpf_map_delete_elem_unsafe)(const void* map,
                                          const void* key) = (void*)BPF_FUNC_map_delete_elem;
 
 /* type safe macro to declare a map and related accessor functions */
-#define DEFINE_BPF_MAP_NO_ACCESSORS(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries) \
-    const struct bpf_map_def SEC("maps") the_map = {                                    \
-            .type = BPF_MAP_TYPE_##TYPE,                                                \
-            .key_size = sizeof(TypeOfKey),                                              \
-            .value_size = sizeof(TypeOfValue),                                          \
-            .max_entries = (num_entries),                                               \
-    };
-
-#define DEFINE_BPF_MAP(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries)                       \
-    DEFINE_BPF_MAP_NO_ACCESSORS(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries)              \
+#define DEFINE_BPF_MAP_UGM(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, usr, grp, md)     \
+    const struct bpf_map_def SEC("maps") the_map = {                                             \
+            .type = BPF_MAP_TYPE_##TYPE,                                                         \
+            .key_size = sizeof(TypeOfKey),                                                       \
+            .value_size = sizeof(TypeOfValue),                                                   \
+            .max_entries = (num_entries),                                                        \
+            .uid = (usr),                                                                        \
+            .gid = (grp),                                                                        \
+            .mode = (md),                                                                        \
+    };                                                                                           \
                                                                                                  \
     static inline __always_inline __unused TypeOfValue* bpf_##the_map##_lookup_elem(             \
             const TypeOfKey* k) {                                                                \
@@ -78,6 +78,18 @@ static int (*bpf_map_delete_elem_unsafe)(const void* map,
         return bpf_map_delete_elem_unsafe(&the_map, k);                                          \
     };
 
+#define DEFINE_BPF_MAP(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries) \
+    DEFINE_BPF_MAP_UGM(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, AID_ROOT, AID_ROOT, 0600)
+
+#define DEFINE_BPF_MAP_GWO(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, gid) \
+    DEFINE_BPF_MAP_UGM(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, AID_ROOT, gid, 0620)
+
+#define DEFINE_BPF_MAP_GRO(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, gid) \
+    DEFINE_BPF_MAP_UGM(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, AID_ROOT, gid, 0640)
+
+#define DEFINE_BPF_MAP_GRW(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, gid) \
+    DEFINE_BPF_MAP_UGM(the_map, TYPE, TypeOfKey, TypeOfValue, num_entries, AID_ROOT, gid, 0660)
+
 static int (*bpf_probe_read)(void* dst, int size, void* unsafe_ptr) = (void*) BPF_FUNC_probe_read;
 static int (*bpf_probe_read_str)(void* dst, int size, void* unsafe_ptr) = (void*) BPF_FUNC_probe_read_str;
 static unsigned long long (*bpf_ktime_get_ns)(void) = (void*) BPF_FUNC_ktime_get_ns;
@@ -85,3 +97,26 @@ static int (*bpf_trace_printk)(const char* fmt, int fmt_size, ...) = (void*) BPF
 static unsigned long long (*bpf_get_current_pid_tgid)(void) = (void*) BPF_FUNC_get_current_pid_tgid;
 static unsigned long long (*bpf_get_current_uid_gid)(void) = (void*) BPF_FUNC_get_current_uid_gid;
 static unsigned long long (*bpf_get_smp_processor_id)(void) = (void*) BPF_FUNC_get_smp_processor_id;
+
+#define KVER_NONE 0
+#define KVER(a, b, c) ((a)*65536 + (b)*256 + (c))
+#define KVER_INF 0xFFFFFFFF
+
+// programs requiring a kernel version >= min_kv && < max_kv
+#define DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, max_kv) \
+    const struct bpf_prog_def SEC("progs") the_prog##_def = {                                  \
+            .uid = (prog_uid),                                                                 \
+            .gid = (prog_gid),                                                                 \
+            .min_kver = (min_kv),                                                              \
+            .max_kver = (max_kv),                                                              \
+    };                                                                                         \
+    SEC(SECTION_NAME)                                                                          \
+    int the_prog
+
+// programs requiring a kernel version >= min_kv
+#define DEFINE_BPF_PROG_KVER(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv) \
+    DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, KVER_INF)
+
+// programs with no kernel version requirements
+#define DEFINE_BPF_PROG(SECTION_NAME, prog_uid, prog_gid, the_prog) \
+    DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, 0, KVER_INF)

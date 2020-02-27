@@ -22,6 +22,10 @@
 
 #include <linux/bpf.h>
 
+// Pull in AID_* constants from //system/core/libcutils/include/private/android_filesystem_config.h
+#define EXCLUDE_FS_CONFIG_STRUCTURES
+#include <private/android_filesystem_config.h>
+
 /*
  * Map structure to be used by Android eBPF C programs. The Android eBPF loader
  * uses this structure from eBPF object to create maps at boot time.
@@ -44,4 +48,16 @@ struct bpf_map_def {
     // The following are not supported by the Android bpfloader:
     //   unsigned int inner_map_idx;
     //   unsigned int numa_node;
+
+    unsigned int uid;   // uid_t
+    unsigned int gid;   // gid_t
+    unsigned int mode;  // mode_t
+};
+
+struct bpf_prog_def {
+    unsigned int uid;
+    unsigned int gid;
+
+    unsigned int min_kver;  // KERNEL_MAJOR * 65536 + KERNEL_MINOR * 256 + KERNEL_SUB
+    unsigned int max_kver;  // ie. 0x40900 for Linux 4.9 - but beware of hexadecimal for >= 10
 };

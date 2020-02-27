@@ -96,21 +96,42 @@ int setrlimitForTest() {
     return res;
 }
 
+#define KVER(a, b, c) ((a)*65536 + (b)*256 + (c))
+
+unsigned kernelVersion() {
+    struct utsname buf;
+    int ret = uname(&buf);
+    if (ret) return 0;
+
+    unsigned kver_major;
+    unsigned kver_minor;
+    unsigned kver_sub;
+    char dummy;
+    ret = sscanf(buf.release, "%u.%u.%u%c", &kver_major, &kver_minor, &kver_sub, &dummy);
+    // Check the device kernel version
+    if (ret < 3) return 0;
+
+    return KVER(kver_major, kver_minor, kver_sub);
+}
+
 std::string BpfLevelToString(BpfLevel bpfLevel) {
     switch (bpfLevel) {
-        case BpfLevel::NONE:      return "NONE_SUPPORT";
-        case BpfLevel::BASIC:     return "BPF_LEVEL_BASIC";
-        case BpfLevel::EXTENDED:  return "BPF_LEVEL_EXTENDED";
-        // No default statement. We want to see errors of the form:
-        // "enumeration value 'BPF_LEVEL_xxx' not handled in switch [-Werror,-Wswitch]".
+        case BpfLevel::NONE:
+            return "None [pre-4.9]";
+        case BpfLevel::BASIC_4_9:
+            return "Basic [4.9]";
+        case BpfLevel::EXTENDED_4_14:
+            return "Extended [4.14]";
+        case BpfLevel::EXTENDED_4_19:
+            return "Extended [4.19]";
+        case BpfLevel::EXTENDED_5_4:
+            return "Extended [5.4+]";
+            // No default statement. We want to see errors of the form:
+            // "enumeration value 'BPF_LEVEL_xxx' not handled in switch [-Werror,-Wswitch]".
     }
 }
 
-BpfLevel getBpfSupportLevel() {
-    struct utsname buf;
-    int kernel_version_major;
-    int kernel_version_minor;
-
+static BpfLevel getUncachedBpfSupportLevel() {
     uint64_t api_level = GetUintProperty<uint64_t>("ro.product.first_api_level", 0);
     if (api_level == 0) {
         ALOGE("Cannot determine initial API level of the device");
@@ -120,19 +141,19 @@ BpfLevel getBpfSupportLevel() {
     // Check if the device is shipped originally with android P.
     if (api_level < MINIMUM_API_REQUIRED) return BpfLevel::NONE;
 
-    int ret = uname(&buf);
-    if (ret) {
-        return BpfLevel::NONE;
-    }
-    char dummy;
-    ret = sscanf(buf.release, "%d.%d%c", &kernel_version_major, &kernel_version_minor, &dummy);
-    // Check the device kernel version
-    if (ret < 2) return BpfLevel::NONE;
-    if (kernel_version_major > 4 || (kernel_version_major == 4 && kernel_version_minor >= 14))
-        return BpfLevel::EXTENDED;
-    if (kernel_version_major == 4 && kernel_version_minor >= 9) return BpfLevel::BASIC;
+    unsigned kver = kernelVersion();
+
+    if (kver >= KVER(5, 4, 0)) return BpfLevel::EXTENDED_5_4;
+    if (kver >= KVER(4, 19, 0)) return BpfLevel::EXTENDED_4_19;
+    if (kver >= KVER(4, 14, 0)) return BpfLevel::EXTENDED_4_14;
+    if (kver >= KVER(4, 9, 0)) return BpfLevel::BASIC_4_9;
 
     return BpfLevel::NONE;
+}
+
+BpfLevel getBpfSupportLevel() {
+    static BpfLevel cache = getUncachedBpfSupportLevel();
+    return cache;
 }
 
 }  // namespace bpf
