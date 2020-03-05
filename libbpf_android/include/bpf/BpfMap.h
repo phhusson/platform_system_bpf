@@ -128,6 +128,11 @@ class BpfMap {
 
     const base::unique_fd& getMap() const { return mMapFd; };
 
+    // Copy assignment operator
+    void operator=(const BpfMap<Key, Value>& other) {
+        mMapFd.reset(fcntl(other.mMapFd.get(), F_DUPFD_CLOEXEC, 0));
+    }
+
     // Move constructor
     void operator=(BpfMap<Key, Value>&& other) noexcept {
         mMapFd = std::move(other.mMapFd);
