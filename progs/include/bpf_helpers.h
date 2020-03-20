@@ -9,6 +9,9 @@
 /* place things in different elf sections */
 #define SEC(NAME) __attribute__((section(NAME), used))
 
+/* Example use: LICENSE("GPL"); or LICENSE("Apache 2.0"); */
+#define LICENSE(NAME) char _license[] SEC("license") = (NAME)
+
 /*
  * Helper functions called from eBPF programs written in C. These are
  * implemented in the kernel sources.
