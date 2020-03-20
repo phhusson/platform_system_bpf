@@ -39,7 +39,6 @@
 #include <log/log.h>
 #include <processgroup/processgroup.h>
 
-using android::base::GetUintProperty;
 using android::base::unique_fd;
 
 // The buffer size for the buffer that records program loading logs, needs to be large enough for
@@ -138,10 +137,14 @@ static BpfLevel getUncachedBpfSupportLevel() {
     if (kver >= KVER(4, 19, 0)) return BpfLevel::EXTENDED_4_19;
     if (kver >= KVER(4, 14, 0)) return BpfLevel::EXTENDED_4_14;
 
-    uint64_t api_level = GetUintProperty<uint64_t>("ro.product.first_api_level", 0);
+    // Override for devices launched with O but now on a 4.9-P+ kernel.
+    bool has_ebpf = base::GetBoolProperty("ro.product.kernel_has_ebpf", false);
+    if (has_ebpf) return BpfLevel::BASIC_4_9;
+
+    uint64_t api_level = base::GetUintProperty<uint64_t>("ro.product.first_api_level", 0);
     if (api_level == 0) {
         ALOGE("Cannot determine initial API level of the device");
-        api_level = GetUintProperty<uint64_t>("ro.build.version.sdk", 0);
+        api_level = base::GetUintProperty<uint64_t>("ro.build.version.sdk", 0);
     }
 
     // Check if the device is shipped originally with android P.
