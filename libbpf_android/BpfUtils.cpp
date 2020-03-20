@@ -117,9 +117,9 @@ unsigned kernelVersion() {
 std::string BpfLevelToString(BpfLevel bpfLevel) {
     switch (bpfLevel) {
         case BpfLevel::NONE:
-            return "None [pre-4.9]";
+            return "None [pre-4.9 or pre-P]";
         case BpfLevel::BASIC_4_9:
-            return "Basic [4.9]";
+            return "Basic [4.9 P+]";
         case BpfLevel::EXTENDED_4_14:
             return "Extended [4.14]";
         case BpfLevel::EXTENDED_4_19:
@@ -132,6 +132,12 @@ std::string BpfLevelToString(BpfLevel bpfLevel) {
 }
 
 static BpfLevel getUncachedBpfSupportLevel() {
+    unsigned kver = kernelVersion();
+
+    if (kver >= KVER(5, 4, 0)) return BpfLevel::EXTENDED_5_4;
+    if (kver >= KVER(4, 19, 0)) return BpfLevel::EXTENDED_4_19;
+    if (kver >= KVER(4, 14, 0)) return BpfLevel::EXTENDED_4_14;
+
     uint64_t api_level = GetUintProperty<uint64_t>("ro.product.first_api_level", 0);
     if (api_level == 0) {
         ALOGE("Cannot determine initial API level of the device");
@@ -141,11 +147,6 @@ static BpfLevel getUncachedBpfSupportLevel() {
     // Check if the device is shipped originally with android P.
     if (api_level < MINIMUM_API_REQUIRED) return BpfLevel::NONE;
 
-    unsigned kver = kernelVersion();
-
-    if (kver >= KVER(5, 4, 0)) return BpfLevel::EXTENDED_5_4;
-    if (kver >= KVER(4, 19, 0)) return BpfLevel::EXTENDED_4_19;
-    if (kver >= KVER(4, 14, 0)) return BpfLevel::EXTENDED_4_14;
     if (kver >= KVER(4, 9, 0)) return BpfLevel::BASIC_4_9;
 
     return BpfLevel::NONE;
