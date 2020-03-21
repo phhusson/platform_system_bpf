@@ -39,7 +39,6 @@
 #include <log/log.h>
 #include <processgroup/processgroup.h>
 
-using android::base::GetUintProperty;
 using android::base::unique_fd;
 
 // The buffer size for the buffer that records program loading logs, needs to be large enough for
@@ -117,9 +116,9 @@ unsigned kernelVersion() {
 std::string BpfLevelToString(BpfLevel bpfLevel) {
     switch (bpfLevel) {
         case BpfLevel::NONE:
-            return "None [pre-4.9]";
+            return "None [pre-4.9 or pre-P]";
         case BpfLevel::BASIC_4_9:
-            return "Basic [4.9]";
+            return "Basic [4.9 P+]";
         case BpfLevel::EXTENDED_4_14:
             return "Extended [4.14]";
         case BpfLevel::EXTENDED_4_19:
@@ -132,20 +131,25 @@ std::string BpfLevelToString(BpfLevel bpfLevel) {
 }
 
 static BpfLevel getUncachedBpfSupportLevel() {
-    uint64_t api_level = GetUintProperty<uint64_t>("ro.product.first_api_level", 0);
-    if (api_level == 0) {
-        ALOGE("Cannot determine initial API level of the device");
-        api_level = GetUintProperty<uint64_t>("ro.build.version.sdk", 0);
-    }
-
-    // Check if the device is shipped originally with android P.
-    if (api_level < MINIMUM_API_REQUIRED) return BpfLevel::NONE;
-
     unsigned kver = kernelVersion();
 
     if (kver >= KVER(5, 4, 0)) return BpfLevel::EXTENDED_5_4;
     if (kver >= KVER(4, 19, 0)) return BpfLevel::EXTENDED_4_19;
     if (kver >= KVER(4, 14, 0)) return BpfLevel::EXTENDED_4_14;
+
+    // Override for devices launched with O but now on a 4.9-P+ kernel.
+    bool has_ebpf = base::GetBoolProperty("ro.product.kernel_has_ebpf", false);
+    if (has_ebpf) return BpfLevel::BASIC_4_9;
+
+    uint64_t api_level = base::GetUintProperty<uint64_t>("ro.product.first_api_level", 0);
+    if (api_level == 0) {
+        ALOGE("Cannot determine initial API level of the device");
+        api_level = base::GetUintProperty<uint64_t>("ro.build.version.sdk", 0);
+    }
+
+    // Check if the device is shipped originally with android P.
+    if (api_level < MINIMUM_API_REQUIRED) return BpfLevel::NONE;
+
     if (kver >= KVER(4, 9, 0)) return BpfLevel::BASIC_4_9;
 
     return BpfLevel::NONE;
