@@ -85,8 +85,8 @@ int synchronizeKernelRCU() {
 int setrlimitForTest() {
     // Set the memory rlimit for the test process if the default MEMLOCK rlimit is not enough.
     struct rlimit limit = {
-            .rlim_cur = 8388608,  // 8 MiB
-            .rlim_max = 8388608,  // 8 MiB
+            .rlim_cur = 1073741824,  // 1 GiB
+            .rlim_max = 1073741824,  // 1 GiB
     };
     int res = setrlimit(RLIMIT_MEMLOCK, &limit);
     if (res) {
