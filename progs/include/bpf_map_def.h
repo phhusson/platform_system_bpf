@@ -23,7 +23,6 @@
 #include <linux/bpf.h>
 
 // Pull in AID_* constants from //system/core/libcutils/include/private/android_filesystem_config.h
-#define EXCLUDE_FS_CONFIG_STRUCTURES
 #include <private/android_filesystem_config.h>
 
 /*
