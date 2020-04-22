@@ -540,27 +540,36 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
     string fname = pathToFilename(string(elfPath), true);
 
     for (int i = 0; i < (int)cs.size(); i++) {
-        string progPinLoc;
-        bool reuse = false;
+        string name = cs[i].name;
 
         if (cs[i].prog_def.has_value()) {
-            if (kvers < cs[i].prog_def->min_kver) continue;
-            if (kvers >= cs[i].prog_def->max_kver) continue;
+            unsigned min_kver = cs[i].prog_def->min_kver;
+            unsigned max_kver = cs[i].prog_def->max_kver;
+            ALOGD("cs[%d].name:%s min_kver:%x .max_kver:%x (kvers:%x)\n", i, name.c_str(), min_kver,
+                  max_kver, kvers);
+            if (kvers < min_kver) continue;
+            if (kvers >= max_kver) continue;
         }
 
+        // strip any potential $foo suffix
+        // this can be used to provide duplicate programs
+        // conditionally loaded based on running kernel version
+        name = name.substr(0, name.find_last_of("$"));
+
+        bool reuse = false;
         // Format of pin location is
         // /sys/fs/bpf/prog_<filename>_<mapname>
-        progPinLoc = string(BPF_FS_PATH) + "prog_" + fname + "_" + cs[i].name;
+        string progPinLoc = string(BPF_FS_PATH) + "prog_" + fname + "_" + name;
         if (access(progPinLoc.c_str(), F_OK) == 0) {
             fd = bpf_obj_get(progPinLoc.c_str());
-            ALOGD("New bpf prog load reusing prog %s, ret: %d\n", cs[i].name.c_str(), fd);
+            ALOGD("New bpf prog load reusing prog %s, ret: %d\n", progPinLoc.c_str(), fd);
             reuse = true;
         } else {
             vector<char> log_buf(BPF_LOAD_LOG_SZ, 0);
 
-            fd = bpf_prog_load(cs[i].type, cs[i].name.c_str(), (struct bpf_insn*)cs[i].data.data(),
-                               cs[i].data.size(), license.c_str(), kvers, 0,
-                               log_buf.data(), log_buf.size());
+            fd = bpf_prog_load(cs[i].type, name.c_str(), (struct bpf_insn*)cs[i].data.data(),
+                               cs[i].data.size(), license.c_str(), kvers, 0, log_buf.data(),
+                               log_buf.size());
             ALOGD("bpf_prog_load lib call for %s (%s) returned fd: %d (%s)\n", elfPath,
                   cs[i].name.c_str(), fd, (fd < 0 ? std::strerror(errno) : "no error"));
 
