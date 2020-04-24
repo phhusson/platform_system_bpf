@@ -559,7 +559,10 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
         bool reuse = false;
         // Format of pin location is
         // /sys/fs/bpf/prog_<filename>_<mapname>
-        string progPinLoc = string(BPF_FS_PATH) + "prog_" + fname + "_" + name;
+        string progPinLoc = BPF_FS_PATH "prog_";
+        progPinLoc += fname;
+        progPinLoc += '_';
+        progPinLoc += name;
         if (access(progPinLoc.c_str(), F_OK) == 0) {
             fd = bpf_obj_get(progPinLoc.c_str());
             ALOGD("New bpf prog load reusing prog %s, ret: %d\n", progPinLoc.c_str(), fd);
