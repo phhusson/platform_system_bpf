@@ -554,7 +554,7 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
         // strip any potential $foo suffix
         // this can be used to provide duplicate programs
         // conditionally loaded based on running kernel version
-        name = name.substr(0, name.find_last_of("$"));
+        name = name.substr(0, name.find_last_of('$'));
 
         bool reuse = false;
         // Format of pin location is
