@@ -554,12 +554,15 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
         // strip any potential $foo suffix
         // this can be used to provide duplicate programs
         // conditionally loaded based on running kernel version
-        name = name.substr(0, name.find_last_of("$"));
+        name = name.substr(0, name.find_last_of('$'));
 
         bool reuse = false;
         // Format of pin location is
         // /sys/fs/bpf/prog_<filename>_<mapname>
-        string progPinLoc = string(BPF_FS_PATH) + "prog_" + fname + "_" + name;
+        string progPinLoc = BPF_FS_PATH "prog_";
+        progPinLoc += fname;
+        progPinLoc += '_';
+        progPinLoc += name;
         if (access(progPinLoc.c_str(), F_OK) == 0) {
             fd = bpf_obj_get(progPinLoc.c_str());
             ALOGD("New bpf prog load reusing prog %s, ret: %d\n", progPinLoc.c_str(), fd);
