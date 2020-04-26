@@ -138,8 +138,8 @@ static BpfLevel getUncachedBpfSupportLevel() {
     if (kver >= KVER(4, 14, 0)) return BpfLevel::EXTENDED_4_14;
 
     // Override for devices launched with O but now on a 4.9-P+ kernel.
-    bool has_ebpf = base::GetBoolProperty("ro.product.kernel_has_ebpf", false);
-    if (has_ebpf) return BpfLevel::BASIC_4_9;
+    bool ebpf_supported = base::GetBoolProperty("ro.kernel.ebpf.supported", false);
+    if (ebpf_supported) return BpfLevel::BASIC_4_9;
 
     uint64_t api_level = base::GetUintProperty<uint64_t>("ro.product.first_api_level", 0);
     if (api_level == 0) {
