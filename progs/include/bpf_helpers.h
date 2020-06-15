@@ -12,6 +12,12 @@
 /* Example use: LICENSE("GPL"); or LICENSE("Apache 2.0"); */
 #define LICENSE(NAME) char _license[] SEC("license") = (NAME)
 
+/* flag the resulting bpf .o file as critical to system functionality,
+ * loading all kernel version appropriate programs in it must succeed
+ * for bpfloader success
+ */
+#define CRITICAL(REASON) char _critical[] SEC("critical") = (REASON)
+
 /*
  * Helper functions called from eBPF programs written in C. These are
  * implemented in the kernel sources.
