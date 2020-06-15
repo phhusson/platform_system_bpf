@@ -43,7 +43,9 @@ class BpfLoadTest : public testing::Test {
         unlink(tp_prog_path);
         unlink(tp_map_path);
 
-        EXPECT_EQ(android::bpf::loadProg("/system/etc/bpf/bpf_load_tp_prog.o"), 0);
+        bool critical = true;
+        EXPECT_EQ(android::bpf::loadProg("/system/etc/bpf/bpf_load_tp_prog.o", &critical), 0);
+        EXPECT_EQ(false, critical);
 
         mProgFd = bpf_obj_get(tp_prog_path);
         EXPECT_GT(mProgFd, 0);
