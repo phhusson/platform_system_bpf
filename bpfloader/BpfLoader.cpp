@@ -72,10 +72,10 @@ void loadAllElfObjects(void) {
 }
 
 int main() {
-    if (android::bpf::isBpfSupported()) {
-        // Load all ELF objects, create programs and maps, and pin them
-        loadAllElfObjects();
-    }
+    if (!android::bpf::isBpfSupported()) return 0;
+
+    // Load all ELF objects, create programs and maps, and pin them
+    loadAllElfObjects();
 
     if (android::base::SetProperty("bpf.progs_loaded", "1") == false) {
         ALOGE("Failed to set bpf.progs_loaded property\n");
