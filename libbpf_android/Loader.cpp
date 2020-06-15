@@ -608,19 +608,26 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
 
 int loadProg(const char* elfPath) {
     vector<char> license;
+    vector<char> critical;
     vector<codeSection> cs;
     vector<unique_fd> mapFds;
+    bool is_critical;
     int ret;
 
     ifstream elfFile(elfPath, ios::in | ios::binary);
     if (!elfFile.is_open()) return -1;
+
+    ret = readSectionByName("critical", elfFile, critical);
+    is_critical = !ret;
 
     ret = readSectionByName("license", elfFile, license);
     if (ret) {
         ALOGE("Couldn't find license in %s\n", elfPath);
         return ret;
     } else {
-        ALOGD("Loading ELF object %s with license %s\n", elfPath, (char*)license.data());
+        ALOGD("Loading %s%s ELF object %s with license %s\n",
+              is_critical ? "critical for " : "optional", is_critical ? (char*)critical.data() : "",
+              elfPath, (char*)license.data());
     }
 
     ret = readCodeSections(elfFile, cs);
