@@ -606,19 +606,21 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
     return 0;
 }
 
-int loadProg(const char* elfPath) {
+int loadProg(const char* elfPath, bool* isCritical) {
     vector<char> license;
     vector<char> critical;
     vector<codeSection> cs;
     vector<unique_fd> mapFds;
-    bool is_critical;
     int ret;
+
+    if (!isCritical) return -1;
+    *isCritical = false;
 
     ifstream elfFile(elfPath, ios::in | ios::binary);
     if (!elfFile.is_open()) return -1;
 
     ret = readSectionByName("critical", elfFile, critical);
-    is_critical = !ret;
+    *isCritical = !ret;
 
     ret = readSectionByName("license", elfFile, license);
     if (ret) {
@@ -626,7 +628,7 @@ int loadProg(const char* elfPath) {
         return ret;
     } else {
         ALOGD("Loading %s%s ELF object %s with license %s\n",
-              is_critical ? "critical for " : "optional", is_critical ? (char*)critical.data() : "",
+              *isCritical ? "critical for " : "optional", *isCritical ? (char*)critical.data() : "",
               elfPath, (char*)license.data());
     }
 
