@@ -650,6 +650,8 @@ int loadProg(const char* elfPath) {
 }
 
 void waitForProgsLoaded() {
+    if (!android::bpf::isBpfSupported()) return;
+
     while (!android::base::WaitForProperty("bpf.progs_loaded", "1", std::chrono::seconds(5))) {
         ALOGW("Waited 5s for bpf.progs_loaded, still waiting...");
     }
