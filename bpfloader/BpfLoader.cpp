@@ -53,7 +53,8 @@ using std::string;
 
 #define BPF_PROG_PATH "/system/etc/bpf/"
 
-void loadAllElfObjects(void) {
+int loadAllElfObjects(void) {
+    int retVal = 0;
     DIR* dir;
     struct dirent* ent;
 
@@ -64,21 +65,35 @@ void loadAllElfObjects(void) {
 
             string progPath = BPF_PROG_PATH + s;
 
-            int ret = android::bpf::loadProg(progPath.c_str());
-            ALOGI("Attempted load object: %s, ret: %s", progPath.c_str(), std::strerror(-ret));
+            bool critical;
+            int ret = android::bpf::loadProg(progPath.c_str(), &critical);
+            if (ret) {
+                if (critical) retVal = ret;
+                ALOGE("Failed to load object: %s, ret: %s", progPath.c_str(), std::strerror(-ret));
+            } else {
+                ALOGI("Loaded object: %s", progPath.c_str());
+            }
         }
         closedir(dir);
     }
+    return retVal;
 }
 
 int main() {
-    if (android::bpf::isBpfSupported()) {
-        // Load all ELF objects, create programs and maps, and pin them
-        loadAllElfObjects();
+    if (!android::bpf::isBpfSupported()) return 0;
+
+    // Load all ELF objects, create programs and maps, and pin them
+    if (loadAllElfObjects() != 0) {
+        ALOGE("=== CRITICAL FAILURE LOADING BPF PROGRAMS ===");
+        ALOGE("If this triggers reliably, you're probably missing kernel options or patches.");
+        ALOGE("If this triggers randomly, you might be hitting some memory allocation problems or "
+              "startup script race.");
+        ALOGE("--- DO NOT EXPECT SYSTEM TO BOOT SUCCESSFULLY ---");
+        return 2;
     }
 
     if (android::base::SetProperty("bpf.progs_loaded", "1") == false) {
-        ALOGE("Failed to set bpf.progs_loaded property\n");
+        ALOGE("Failed to set bpf.progs_loaded property");
         return 1;
     }
 

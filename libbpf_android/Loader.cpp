@@ -606,21 +606,30 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
     return 0;
 }
 
-int loadProg(const char* elfPath) {
+int loadProg(const char* elfPath, bool* isCritical) {
     vector<char> license;
+    vector<char> critical;
     vector<codeSection> cs;
     vector<unique_fd> mapFds;
     int ret;
 
+    if (!isCritical) return -1;
+    *isCritical = false;
+
     ifstream elfFile(elfPath, ios::in | ios::binary);
     if (!elfFile.is_open()) return -1;
+
+    ret = readSectionByName("critical", elfFile, critical);
+    *isCritical = !ret;
 
     ret = readSectionByName("license", elfFile, license);
     if (ret) {
         ALOGE("Couldn't find license in %s\n", elfPath);
         return ret;
     } else {
-        ALOGD("Loading ELF object %s with license %s\n", elfPath, (char*)license.data());
+        ALOGD("Loading %s%s ELF object %s with license %s\n",
+              *isCritical ? "critical for " : "optional", *isCritical ? (char*)critical.data() : "",
+              elfPath, (char*)license.data());
     }
 
     ret = readCodeSections(elfFile, cs);
@@ -650,6 +659,8 @@ int loadProg(const char* elfPath) {
 }
 
 void waitForProgsLoaded() {
+    if (!android::bpf::isBpfSupported()) return;
+
     while (!android::base::WaitForProperty("bpf.progs_loaded", "1", std::chrono::seconds(5))) {
         ALOGW("Waited 5s for bpf.progs_loaded, still waiting...");
     }
