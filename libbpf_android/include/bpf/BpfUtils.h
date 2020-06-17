@@ -129,6 +129,22 @@ inline int mapRetrieve(const char* pathname, uint32_t flag) {
     return bpfFdGet(pathname, flag);
 }
 
+inline int mapRetrieveRW(const char* pathname) {
+    return mapRetrieve(pathname, 0);
+}
+
+inline int mapRetrieveRO(const char* pathname) {
+    return mapRetrieve(pathname, BPF_F_RDONLY);
+}
+
+inline int mapRetrieveWO(const char* pathname) {
+    return mapRetrieve(pathname, BPF_F_WRONLY);
+}
+
+inline int retrieveProgram(const char* pathname) {
+    return bpfFdGet(pathname, BPF_F_RDONLY);
+}
+
 inline int attachProgram(bpf_attach_type type, const base::unique_fd& prog_fd,
                          const base::unique_fd& cg_fd) {
     return bpf(BPF_PROG_ATTACH, {
