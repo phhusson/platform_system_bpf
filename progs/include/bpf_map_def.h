@@ -59,4 +59,6 @@ struct bpf_prog_def {
 
     unsigned int min_kver;  // KERNEL_MAJOR * 65536 + KERNEL_MINOR * 256 + KERNEL_SUB
     unsigned int max_kver;  // ie. 0x40900 for Linux 4.9 - but beware of hexadecimal for >= 10
+
+    bool optional;  // program section (ie. function) may fail to load, continue onto next func. 
 };
