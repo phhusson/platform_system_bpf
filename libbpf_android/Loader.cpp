@@ -665,12 +665,21 @@ int loadProg(const char* elfPath, bool* isCritical) {
     return ret;
 }
 
+static bool waitSecondsForProgsLoaded(int seconds) {
+    bool ok =
+            android::base::WaitForProperty("bpf.progs_loaded", "1", std::chrono::seconds(seconds));
+    if (!ok) ALOGW("Waited %ds for bpf.progs_loaded, still waiting...", seconds);
+    return ok;
+}
+
 void waitForProgsLoaded() {
     if (!android::bpf::isBpfSupported()) return;
 
-    while (!android::base::WaitForProperty("bpf.progs_loaded", "1", std::chrono::seconds(5))) {
-        ALOGW("Waited 5s for bpf.progs_loaded, still waiting...");
-    }
+    if (waitSecondsForProgsLoaded(5)) return;
+    if (waitSecondsForProgsLoaded(10)) return;
+    if (waitSecondsForProgsLoaded(20)) return;
+    while (!waitSecondsForProgsLoaded(60))
+        ;  // loop until success
 }
 
 }  // namespace bpf
