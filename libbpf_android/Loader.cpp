@@ -564,8 +564,9 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
         progPinLoc += '_';
         progPinLoc += name;
         if (access(progPinLoc.c_str(), F_OK) == 0) {
-            fd = bpf_obj_get(progPinLoc.c_str());
-            ALOGD("New bpf prog load reusing prog %s, ret: %d\n", progPinLoc.c_str(), fd);
+            fd = retrieveProgram(progPinLoc.c_str());
+            ALOGD("New bpf prog load reusing prog %s, ret: %d (%s)\n", progPinLoc.c_str(), fd,
+                  (fd < 0 ? std::strerror(errno) : "no error"));
             reuse = true;
         } else {
             vector<char> log_buf(BPF_LOAD_LOG_SZ, 0);
@@ -579,9 +580,15 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
             if (fd < 0) {
                 std::vector<std::string> lines = android::base::Split(log_buf.data(), "\n");
 
-                ALOGE("bpf_prog_load - BEGIN log_buf contents:");
-                for (const auto& line : lines) ALOGE("%s", line.c_str());
-                ALOGE("bpf_prog_load - END log_buf contents.");
+                ALOGW("bpf_prog_load - BEGIN log_buf contents:");
+                for (const auto& line : lines) ALOGW("%s", line.c_str());
+                ALOGW("bpf_prog_load - END log_buf contents.");
+
+                if (cs[i].prog_def->optional) {
+                    ALOGW("failed program is marked optional - continuing...");
+                    continue;
+                }
+                ALOGE("non-optional program failed to load.");
             }
         }
 
