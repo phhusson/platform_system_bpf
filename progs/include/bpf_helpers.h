@@ -111,21 +111,47 @@ static unsigned long long (*bpf_get_smp_processor_id)(void) = (void*) BPF_FUNC_g
 #define KVER(a, b, c) ((a)*65536 + (b)*256 + (c))
 #define KVER_INF 0xFFFFFFFF
 
-// programs requiring a kernel version >= min_kv && < max_kv
-#define DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, max_kv) \
-    const struct bpf_prog_def SEC("progs") the_prog##_def = {                                  \
-            .uid = (prog_uid),                                                                 \
-            .gid = (prog_gid),                                                                 \
-            .min_kver = (min_kv),                                                              \
-            .max_kver = (max_kv),                                                              \
-    };                                                                                         \
-    SEC(SECTION_NAME)                                                                          \
+#define DEFINE_BPF_PROG_KVER_RANGE_OPT(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, max_kv, \
+                                       opt)                                                        \
+    const struct bpf_prog_def SEC("progs") the_prog##_def = {                                      \
+            .uid = (prog_uid),                                                                     \
+            .gid = (prog_gid),                                                                     \
+            .min_kver = (min_kv),                                                                  \
+            .max_kver = (max_kv),                                                                  \
+            .optional = (opt),                                                                     \
+    };                                                                                             \
+    SEC(SECTION_NAME)                                                                              \
     int the_prog
 
+// Programs (here used in the sense of functions/sections) marked optional are allowed to fail
+// to load (for example due to missing kernel patches).
+// The bpfloader will just ignore these failures and continue processing the next section.
+//
+// A non-optional program (function/section) failing to load causes a failure and aborts
+// processing of the entire .o, if the .o is additionally marked critical, this will result
+// in the entire bpfloader process terminating with a failure and not setting the bpf.progs_loaded
+// system property.  This in turn results in waitForProgsLoaded() never finishing.
+//
+// ie. a non-optional program in a critical .o is mandatory for kernels matching the min/max kver.
+
+// programs requiring a kernel version >= min_kv && < max_kv
+#define DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, max_kv) \
+    DEFINE_BPF_PROG_KVER_RANGE_OPT(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, max_kv, \
+                                   false)
+#define DEFINE_OPTIONAL_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, \
+                                            max_kv)                                             \
+    DEFINE_BPF_PROG_KVER_RANGE_OPT(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, max_kv, true)
+
 // programs requiring a kernel version >= min_kv
-#define DEFINE_BPF_PROG_KVER(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv) \
-    DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, KVER_INF)
+#define DEFINE_BPF_PROG_KVER(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv)                 \
+    DEFINE_BPF_PROG_KVER_RANGE_OPT(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, KVER_INF, \
+                                   false)
+#define DEFINE_OPTIONAL_BPF_PROG_KVER(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv)        \
+    DEFINE_BPF_PROG_KVER_RANGE_OPT(SECTION_NAME, prog_uid, prog_gid, the_prog, min_kv, KVER_INF, \
+                                   true)
 
 // programs with no kernel version requirements
 #define DEFINE_BPF_PROG(SECTION_NAME, prog_uid, prog_gid, the_prog) \
-    DEFINE_BPF_PROG_KVER_RANGE(SECTION_NAME, prog_uid, prog_gid, the_prog, 0, KVER_INF)
+    DEFINE_BPF_PROG_KVER_RANGE_OPT(SECTION_NAME, prog_uid, prog_gid, the_prog, 0, KVER_INF, false)
+#define DEFINE_OPTIONAL_BPF_PROG(SECTION_NAME, prog_uid, prog_gid, the_prog) \
+    DEFINE_BPF_PROG_KVER_RANGE_OPT(SECTION_NAME, prog_uid, prog_gid, the_prog, 0, KVER_INF, true)
