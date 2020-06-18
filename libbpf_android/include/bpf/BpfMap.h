@@ -179,7 +179,7 @@ class BpfMap {
 
 template <class Key, class Value>
 base::Result<void> BpfMap<Key, Value>::init(const char* path) {
-    mMapFd = base::unique_fd(mapRetrieve(path, 0));
+    mMapFd = base::unique_fd(mapRetrieveRW(path));
     if (mMapFd == -1) {
         return ErrnoErrorf("Pinned map not accessible or does not exist: ({})", path);
     }
