@@ -23,7 +23,7 @@ on load_bpf_programs
     write /proc/sys/net/core/bpf_jit_enable 1
     # Enable JIT kallsyms export for privileged users only
     write /proc/sys/net/core/bpf_jit_kallsyms 1
-    start bpfloader
+    exec_start bpfloader
 
 service bpfloader /system/bin/bpfloader
     capabilities CHOWN SYS_ADMIN
