@@ -1,5 +1,31 @@
+# zygote-start is what officially starts netd (see //system/core/rootdir/init.rc)
+# However, on some hardware it's started from post-fs-data as well, which is just
+# a tad earlier.  There's no benefit to that though, since on 4.9+ P+ devices netd
+# will just block until bpfloader finishes and sets the bpf.progs_loaded property.
+#
+# It is important that we start bpfloader after:
+#   - /sys/fs/bpf is already mounted,
+#   - apex (incl. rollback) is initialized (so that in the future we can load bpf
+#     programs shipped as part of apex mainline modules)
+#   - system properties have been set, this is because isBpfSupported() calls
+#     getUncachedBpfSupportLevel() which depends on
+#     ro.kernel.ebpf.supported, ro.product.first_api_level & ro.build.version.sdk
+#   - logd is ready for us to log stuff
+#
+# At the same time we want to be as early as possible to reduce races and thus
+# failures (before memory is fragmented, and cpu is busy running tons of other
+# stuff) and we absolutely want to be before netd and the system boot slot is
+# considered to have booted successfully.
+#
+on load_bpf_programs
+    # Enable the eBPF JIT -- but do note that on 64-bit kernels it is likely
+    # already force enabled by the kernel config option BPF_JIT_ALWAYS_ON
+    write /proc/sys/net/core/bpf_jit_enable 1
+    # Enable JIT kallsyms export for privileged users only
+    write /proc/sys/net/core/bpf_jit_kallsyms 1
+    exec_start bpfloader
+
 service bpfloader /system/bin/bpfloader
-    class main
     capabilities CHOWN SYS_ADMIN
     #
     # Set RLIMIT_MEMLOCK to 1GiB for bpfloader
@@ -31,11 +57,6 @@ service bpfloader /system/bin/bpfloader
     #
     rlimit memlock 1073741824 1073741824
     oneshot
-
-# Need to make sure this runs *before* the bpfloader.
-on early-init
-    # Enable the eBPF JIT -- but do note that it is likely already force enabled
-    # by the kernel config option BPF_JIT_ALWAYS_ON
-    write /proc/sys/net/core/bpf_jit_enable 1
-    # Enable JIT kallsyms export for privileged users only
-    write /proc/sys/net/core/bpf_jit_kallsyms 1
+    reboot_on_failure reboot,bpfloader-failed
+    # we're not really updatable, but want to be able to load bpf programs shipped in apexes
+    updatable
