@@ -313,7 +313,7 @@ static int getSectionSymNames(ifstream& elfFile, const string& sectionName, vect
 
     /* No section found with matching name*/
     if (sec_idx == -1) {
-        ALOGE("No %s section could be found in elf object\n", sectionName.c_str());
+        ALOGW("No %s section could be found in elf object\n", sectionName.c_str());
         return -1;
     }
 
