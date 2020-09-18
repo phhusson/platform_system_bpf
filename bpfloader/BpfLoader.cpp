@@ -51,19 +51,21 @@
 using android::base::EndsWith;
 using std::string;
 
-#define BPF_PROG_PATH "/system/etc/bpf/"
+#define BPF_PROG_PATH_MAINLINE_TETHERING "/apex/com.android.tethering/etc/bpf/"
+#define BPF_PROG_PATH_SYSTEM "/system/etc/bpf/"
 
-int loadAllElfObjects(void) {
+int loadAllElfObjects(const char* progDir) {
     int retVal = 0;
     DIR* dir;
     struct dirent* ent;
 
-    if ((dir = opendir(BPF_PROG_PATH)) != NULL) {
+    if ((dir = opendir(progDir)) != NULL) {
         while ((ent = readdir(dir)) != NULL) {
             string s = ent->d_name;
             if (!EndsWith(s, ".o")) continue;
 
-            string progPath = BPF_PROG_PATH + s;
+            string progPath(progDir);
+            progPath += s;
 
             bool critical;
             int ret = android::bpf::loadProg(progPath.c_str(), &critical);
@@ -83,14 +85,16 @@ int main() {
     if (!android::bpf::isBpfSupported()) return 0;
 
     // Load all ELF objects, create programs and maps, and pin them
-    if (loadAllElfObjects() != 0) {
-        ALOGE("=== CRITICAL FAILURE LOADING BPF PROGRAMS ===");
-        ALOGE("If this triggers reliably, you're probably missing kernel options or patches.");
-        ALOGE("If this triggers randomly, you might be hitting some memory allocation problems or "
-              "startup script race.");
-        ALOGE("--- DO NOT EXPECT SYSTEM TO BOOT SUCCESSFULLY ---");
-        sleep(20);
-        return 2;
+    for (const auto dir : {BPF_PROG_PATH_MAINLINE_TETHERING, BPF_PROG_PATH_SYSTEM}) {
+        if (loadAllElfObjects(dir) != 0) {
+            ALOGE("=== CRITICAL FAILURE LOADING BPF PROGRAMS FROM %s ===", dir);
+            ALOGE("If this triggers reliably, you're probably missing kernel options or patches.");
+            ALOGE("If this triggers randomly, you might be hitting some memory allocation "
+                  "problems or startup script race.");
+            ALOGE("--- DO NOT EXPECT SYSTEM TO BOOT SUCCESSFULLY ---");
+            sleep(20);
+            return 2;
+        }
     }
 
     if (android::base::SetProperty("bpf.progs_loaded", "1") == false) {
