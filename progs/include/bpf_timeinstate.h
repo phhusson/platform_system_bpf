@@ -15,6 +15,7 @@
  */
 
 #include <inttypes.h>
+#include <sys/types.h>
 
 #define BPF_FS_PATH "/sys/fs/bpf/"
 
@@ -43,3 +44,9 @@ typedef struct {
     uint32_t policy;
     uint32_t freq;
 } freq_idx_key_t;
+
+typedef struct {
+    pid_t tgid;
+    uint16_t aggregation_key;
+    uint16_t bucket;
+} aggregated_task_tis_key_t;
