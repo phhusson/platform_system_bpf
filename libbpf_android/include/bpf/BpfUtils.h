@@ -29,7 +29,7 @@
 
 #ifdef BPF_FD_JUST_USE_INT
   #define BPF_FD_TYPE int
-  #define BPF_FD_TO_INT(x) (x)
+  #define BPF_FD_TO_INT(x) static_cast<__u32>(x)
 #else
   #include <android-base/unique_fd.h>
   #define BPF_FD_TYPE base::unique_fd&
