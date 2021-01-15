@@ -126,11 +126,8 @@ static int readSectionHeadersAll(ifstream& elfFile, vector<Elf64_Shdr>& shTable)
 /* Read a section by its index - for ex to get sec hdr strtab blob */
 static int readSectionByIdx(ifstream& elfFile, int id, vector<char>& sec) {
     vector<Elf64_Shdr> shTable;
-    int entries, ret = 0;
-
-    ret = readSectionHeadersAll(elfFile, shTable);
+    int ret = readSectionHeadersAll(elfFile, shTable);
     if (ret) return ret;
-    entries = shTable.size();
 
     elfFile.seekg(shTable[id].sh_offset);
     if (elfFile.fail()) return -1;
@@ -144,9 +141,7 @@ static int readSectionByIdx(ifstream& elfFile, int id, vector<char>& sec) {
 /* Read whole section header string table */
 static int readSectionHeaderStrtab(ifstream& elfFile, vector<char>& strtab) {
     Elf64_Ehdr eh;
-    int ret = 0;
-
-    ret = readElfHeader(elfFile, &eh);
+    int ret = readElfHeader(elfFile, &eh);
     if (ret) return ret;
 
     ret = readSectionByIdx(elfFile, eh.e_shstrndx, strtab);
