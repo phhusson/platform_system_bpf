@@ -54,7 +54,6 @@ uint64_t getSocketCookie(int sockFd);
 int synchronizeKernelRCU();
 int setrlimitForTest();
 unsigned kernelVersion();
-std::string BpfLevelToString(BpfLevel BpfLevel);
 BpfLevel getBpfSupportLevel();
 
 inline bool isBpfSupported() {
