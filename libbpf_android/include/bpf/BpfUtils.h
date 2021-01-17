@@ -31,9 +31,6 @@ namespace android {
 namespace bpf {
 
 enum class BpfLevel {
-    // Devices shipped before P or kernel version is lower than 4.9 do not
-    // have eBPF enabled.
-    NONE,
     // Devices shipped in P with android 4.9 kernel only have the basic eBPF
     // functionalities such as xt_bpf and cgroup skb filter.
     BASIC_4_9,
@@ -57,7 +54,7 @@ unsigned kernelVersion();
 BpfLevel getBpfSupportLevel();
 
 inline bool isBpfSupported() {
-    return getBpfSupportLevel() != BpfLevel::NONE;
+    return true;
 }
 
 #define SKIP_IF_BPF_NOT_SUPPORTED                                                    \
