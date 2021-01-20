@@ -61,19 +61,6 @@ inline bool isBpfSupported() {
     return getBpfSupportLevel() != BpfLevel::NONE;
 }
 
-#define SKIP_IF_BPF_NOT_SUPPORTED                                                    \
-    do {                                                                             \
-        if (!android::bpf::isBpfSupported()) {                                       \
-            GTEST_LOG_(INFO) << "This test is skipped since bpf is not available\n"; \
-            return;                                                                  \
-        }                                                                            \
-    } while (0)
-
-#define SKIP_IF_BPF_SUPPORTED                       \
-    do {                                            \
-        if (android::bpf::isBpfSupported()) return; \
-    } while (0)
-
 #define SKIP_IF_EXTENDED_BPF_NOT_SUPPORTED                                                \
     do {                                                                                  \
         if (android::bpf::getBpfSupportLevel() < android::bpf::BpfLevel::EXTENDED_4_14) { \
