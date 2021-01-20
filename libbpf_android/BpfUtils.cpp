@@ -94,8 +94,6 @@ int setrlimitForTest() {
     return res;
 }
 
-#define KVER(a, b, c) ((a)*65536 + (b)*256 + (c))
-
 unsigned kernelVersion() {
     struct utsname buf;
     int ret = uname(&buf);
@@ -110,22 +108,6 @@ unsigned kernelVersion() {
     if (ret < 3) return 0;
 
     return KVER(kver_major, kver_minor, kver_sub);
-}
-
-static BpfLevel getUncachedBpfSupportLevel() {
-    unsigned kver = kernelVersion();
-
-    if (kver >= KVER(5, 4, 0)) return BpfLevel::EXTENDED_5_4;
-    if (kver >= KVER(4, 19, 0)) return BpfLevel::EXTENDED_4_19;
-    if (kver >= KVER(4, 14, 0)) return BpfLevel::EXTENDED_4_14;
-
-    // Basic BPF support is required on all devices.
-    return BpfLevel::BASIC_4_9;
-}
-
-BpfLevel getBpfSupportLevel() {
-    static BpfLevel cache = getUncachedBpfSupportLevel();
-    return cache;
 }
 
 }  // namespace bpf
