@@ -82,8 +82,6 @@ int loadAllElfObjects(const char* progDir) {
 }
 
 int main() {
-    if (!android::bpf::isBpfSupported()) return 0;
-
     // Load all ELF objects, create programs and maps, and pin them
     for (const auto dir : {BPF_PROG_PATH_MAINLINE_TETHERING, BPF_PROG_PATH_SYSTEM}) {
         if (loadAllElfObjects(dir) != 0) {
