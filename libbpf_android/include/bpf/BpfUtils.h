@@ -48,10 +48,6 @@ static inline bool isAtLeastKernelVersion(unsigned major, unsigned minor, unsign
     return kernelVersion() >= KVER(major, minor, sub);
 }
 
-inline bool isBpfSupported() {
-    return true;
-}
-
 #define SKIP_IF_EXTENDED_BPF_NOT_SUPPORTED                                        \
     do {                                                                          \
         if (!android::bpf::isAtLeastKernelVersion(4, 14, 0)) {                    \
