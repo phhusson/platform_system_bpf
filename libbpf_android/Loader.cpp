@@ -669,8 +669,6 @@ static bool waitSecondsForProgsLoaded(int seconds) {
 }
 
 void waitForProgsLoaded() {
-    if (!android::bpf::isBpfSupported()) return;
-
     if (waitSecondsForProgsLoaded(5)) return;
     if (waitSecondsForProgsLoaded(10)) return;
     if (waitSecondsForProgsLoaded(20)) return;
