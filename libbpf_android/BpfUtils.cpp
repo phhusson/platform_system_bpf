@@ -112,23 +112,6 @@ unsigned kernelVersion() {
     return KVER(kver_major, kver_minor, kver_sub);
 }
 
-std::string BpfLevelToString(BpfLevel bpfLevel) {
-    switch (bpfLevel) {
-        case BpfLevel::NONE:
-            return "None [pre-4.9 or pre-P]";
-        case BpfLevel::BASIC_4_9:
-            return "Basic [4.9 P+]";
-        case BpfLevel::EXTENDED_4_14:
-            return "Extended [4.14]";
-        case BpfLevel::EXTENDED_4_19:
-            return "Extended [4.19]";
-        case BpfLevel::EXTENDED_5_4:
-            return "Extended [5.4+]";
-            // No default statement. We want to see errors of the form:
-            // "enumeration value 'BPF_LEVEL_xxx' not handled in switch [-Werror,-Wswitch]".
-    }
-}
-
 static BpfLevel getUncachedBpfSupportLevel() {
     unsigned kver = kernelVersion();
 
