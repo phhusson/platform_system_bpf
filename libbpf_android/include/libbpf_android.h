@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-#ifndef LIBBPF_SYSTEM_H
-#define LIBBPF_SYSTEM_H
+#pragma once
 
 #include <libbpf.h>
 #include <linux/bpf.h>
@@ -32,5 +31,3 @@ void waitForProgsLoaded();
 
 }  // namespace bpf
 }  // namespace android
-
-#endif
