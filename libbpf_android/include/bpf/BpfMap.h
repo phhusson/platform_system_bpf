@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef BPF_BPFMAP_H
-#define BPF_BPFMAP_H
+#pragma once
 
 #include <linux/bpf.h>
 
@@ -258,5 +257,3 @@ class BpfMapRO : public BpfMap<Key, Value> {
 
 }  // namespace bpf
 }  // namespace android
-
-#endif
