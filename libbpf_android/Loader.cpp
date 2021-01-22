@@ -29,7 +29,6 @@
 #include <unistd.h>
 
 #include "../progs/include/bpf_map_def.h"
-#include "LoaderUtils.h"
 #include "bpf/BpfUtils.h"
 #include "include/libbpf_android.h"
 
@@ -59,6 +58,17 @@ using std::vector;
 
 namespace android {
 namespace bpf {
+
+static string pathToFilename(const string& path, bool noext = false) {
+    vector<string> spath = android::base::Split(path, "/");
+    string ret = spath.back();
+
+    if (noext) {
+        size_t lastindex = ret.find_last_of('.');
+        return ret.substr(0, lastindex);
+    }
+    return ret;
+}
 
 typedef struct {
     const char* name;
@@ -252,7 +262,7 @@ static string getSectionName(enum bpf_prog_type type)
 {
     for (int i = 0; sectionNameTypes[i].type != BPF_PROG_TYPE_UNSPEC; i++)
         if (sectionNameTypes[i].type == type)
-            return std::string(sectionNameTypes[i].name);
+            return string(sectionNameTypes[i].name);
 
     return NULL;
 }
@@ -264,7 +274,7 @@ static bool isRelSection(codeSection& cs, string& name) {
 
         if (st.type != cs.type) continue;
 
-        if (StartsWith(name, std::string(".rel") + st.name + "/"))
+        if (StartsWith(name, string(".rel") + st.name + "/"))
             return true;
         else
             return false;
@@ -352,7 +362,10 @@ static int readCodeSections(ifstream& elfFile, vector<codeSection>& cs) {
         enum bpf_prog_type ptype = getSectionType(name);
         if (ptype != BPF_PROG_TYPE_UNSPEC) {
             string oldName = name;
-            deslash(name);
+
+            // convert all slashes to underscores
+            std::replace(name.begin(), name.end(), '/', '_');
+
             cs_temp.type = ptype;
             cs_temp.name = name;
 
@@ -578,7 +591,7 @@ static int loadCodeSections(const char* elfPath, vector<codeSection>& cs, const 
                   cs[i].name.c_str(), fd, (fd < 0 ? std::strerror(errno) : "no error"));
 
             if (fd < 0) {
-                std::vector<std::string> lines = android::base::Split(log_buf.data(), "\n");
+                vector<string> lines = android::base::Split(log_buf.data(), "\n");
 
                 ALOGW("bpf_prog_load - BEGIN log_buf contents:");
                 for (const auto& line : lines) ALOGW("%s", line.c_str());
