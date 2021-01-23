@@ -133,10 +133,11 @@ class BpfMap {
         return *this;
     }
 
-    // Move constructor
-    void operator=(BpfMap<Key, Value>&& other) noexcept {
+    // Move assignment operator
+    BpfMap<Key, Value>& operator=(BpfMap<Key, Value>&& other) noexcept {
         mMapFd = std::move(other.mMapFd);
         other.reset(-1);
+        return *this;
     }
 
     void reset(base::unique_fd fd) = delete;
