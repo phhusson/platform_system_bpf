@@ -47,18 +47,18 @@
  * This will make sure that if you change the type of a map you'll get compile
  * errors at any spots you forget to update with the new type.
  *
- * Note: these all take 'const void* map' because from the C/eBPF point of view
+ * Note: these all take pointers to const map because from the C/eBPF point of view
  * the map struct is really just a readonly map definition of the in kernel object.
  * Runtime modification of the map defining struct is meaningless, since
  * the contents is only ever used during bpf program loading & map creation
  * by the bpf loader, and not by the eBPF program itself.
  */
-static void* (*bpf_map_lookup_elem_unsafe)(const void* map,
+static void* (*bpf_map_lookup_elem_unsafe)(const struct bpf_map_def* map,
                                            const void* key) = (void*)BPF_FUNC_map_lookup_elem;
-static int (*bpf_map_update_elem_unsafe)(const void* map, const void* key, const void* value,
-                                         unsigned long long flags) = (void*)
+static int (*bpf_map_update_elem_unsafe)(const struct bpf_map_def* map, const void* key,
+                                         const void* value, unsigned long long flags) = (void*)
         BPF_FUNC_map_update_elem;
-static int (*bpf_map_delete_elem_unsafe)(const void* map,
+static int (*bpf_map_delete_elem_unsafe)(const struct bpf_map_def* map,
                                          const void* key) = (void*)BPF_FUNC_map_delete_elem;
 
 /* type safe macro to declare a map and related accessor functions */
@@ -102,6 +102,7 @@ static int (*bpf_map_delete_elem_unsafe)(const void* map,
 static int (*bpf_probe_read)(void* dst, int size, void* unsafe_ptr) = (void*) BPF_FUNC_probe_read;
 static int (*bpf_probe_read_str)(void* dst, int size, void* unsafe_ptr) = (void*) BPF_FUNC_probe_read_str;
 static unsigned long long (*bpf_ktime_get_ns)(void) = (void*) BPF_FUNC_ktime_get_ns;
+static unsigned long long (*bpf_ktime_get_boot_ns)(void) = (void*)BPF_FUNC_ktime_get_boot_ns;
 static int (*bpf_trace_printk)(const char* fmt, int fmt_size, ...) = (void*) BPF_FUNC_trace_printk;
 static unsigned long long (*bpf_get_current_pid_tgid)(void) = (void*) BPF_FUNC_get_current_pid_tgid;
 static unsigned long long (*bpf_get_current_uid_gid)(void) = (void*) BPF_FUNC_get_current_uid_gid;
