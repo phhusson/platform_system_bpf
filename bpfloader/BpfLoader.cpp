@@ -121,8 +121,8 @@ int main() {
             ALOGE("If this triggers randomly, you might be hitting some memory allocation "
                   "problems or startup script race.");
             ALOGE("--- DO NOT EXPECT SYSTEM TO BOOT SUCCESSFULLY ---");
-            sleep(20);
-            return 2;
+	    android::base::SetProperty("bpf.progs_loaded", "1");
+	    return 0;
         }
     }
 
